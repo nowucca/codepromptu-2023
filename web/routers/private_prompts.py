@@ -9,21 +9,14 @@ from web.dependencies import require_current_user, get_prompt_service
 router = APIRouter()
 
 
-@router.get("/login", status_code=204, summary="Test Login")
-async def test_login(service: PromptServiceInterface = Depends(get_prompt_service),
-                     user: User = Depends(require_current_user)):
-    print(f"Login successful user={user}   service={service}")
-    return
-
-
-@router.post("/prompt/", status_code=201, summary="Add a New Prompt")
+@router.post("/prompt/", status_code=201, summary="Add a New Private Prompt")
 async def add_prompt(prompt: Prompt,
                      service: PromptServiceInterface = Depends(get_prompt_service),
                      user: User = Depends(require_current_user)):
     return await service.create_prompt(prompt, user)
 
 
-@router.delete("/prompt/{guid}", status_code=204, summary="Delete a Prompt by GUID")
+@router.delete("/prompt/{guid}", status_code=204, summary="Delete a Private Prompt by GUID")
 async def delete_prompt(guid: str,
                         service: PromptServiceInterface = Depends(get_prompt_service),
                         user: User = Depends(require_current_user)):
@@ -31,7 +24,7 @@ async def delete_prompt(guid: str,
     return {}  # Return an empty response for 204 status
 
 
-@router.put("/prompt/{guid}", summary="Update a Prompt by GUID")
+@router.put("/prompt/{guid}", summary="Update a Private Prompt by GUID")
 async def update_prompt(guid: str, prompt: Prompt, service: PromptServiceInterface = Depends(get_prompt_service),
                         user: User = Depends(require_current_user)):
     assert guid == prompt.guid
