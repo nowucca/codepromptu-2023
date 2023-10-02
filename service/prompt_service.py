@@ -15,40 +15,40 @@ from .variables import VariablesService
 class PromptServiceInterface(ABC):
 
     @abstractmethod
-    def create_prompt(self, prompt: Prompt) -> str:
+    async def create_prompt(self, prompt: Prompt) -> str:
         pass
 
     @abstractmethod
-    def update_prompt(self, prompt: Prompt) -> None:
+    async def update_prompt(self, prompt: Prompt) -> None:
         pass
 
     @abstractmethod
-    def delete_prompt(self, guid: str) -> None:
+    async def delete_prompt(self, guid: str) -> None:
         pass
 
     @abstractmethod
-    def get_prompt(self, guid: str) -> Prompt:
+    async def get_prompt(self, guid: str) -> Prompt:
         pass
 
     @abstractmethod
-    def list_prompts(self) -> List[Prompt]:
+    async def list_prompts(self) -> List[Prompt]:
         pass
 
     @abstractmethod
-    def update_tags_for_prompt(self, guid: str, tags: List[str]) -> None:
+    async def update_tags_for_prompt(self, guid: str, tags: List[str]) -> None:
         pass
 
     @abstractmethod
-    def update_classification_for_prompt(self, guid: str, classification: str) -> None:
+    async def update_classification_for_prompt(self, guid: str, classification: str) -> None:
         pass
 
-    def search_prompts(self, query: str) -> List[Prompt]:
+    async def search_prompts(self, query: str) -> List[Prompt]:
         pass
 
-    def get_prompts_by_tag(self, tag: str) -> List[Prompt]:
+    async def get_prompts_by_tag(self, tag: str) -> List[Prompt]:
         pass
 
-    def get_prompts_by_classification(self, classification: str) -> List[Prompt]:
+    async def get_prompts_by_classification(self, classification: str) -> List[Prompt]:
         pass
 
 class PromptService(PromptServiceInterface):
@@ -57,7 +57,7 @@ class PromptService(PromptServiceInterface):
         self.repo = repository
         self.variables_service = VariablesService()
 
-    def create_prompt(self, prompt: Prompt) -> str:
+    async def create_prompt(self, prompt: Prompt) -> str:
         """
         Create a new prompt in the database.
 
@@ -86,7 +86,7 @@ class PromptService(PromptServiceInterface):
             db.rollback_transaction()
             raise PromptException("An unexpected error occurred while processing your request.") from e
 
-    def update_prompt(self, prompt: Prompt) -> None:
+    async def update_prompt(self, prompt: Prompt) -> None:
         """
         Update an existing prompt in the database.
 
@@ -111,7 +111,7 @@ class PromptService(PromptServiceInterface):
             db.rollback_transaction()
             raise PromptException("An unexpected error occurred while updating the prompt.") from e
 
-    def delete_prompt(self, guid: str) -> None:
+    async def delete_prompt(self, guid: str) -> None:
         """
         Delete a prompt from the database using its GUID.
 
@@ -135,7 +135,7 @@ class PromptService(PromptServiceInterface):
             db.rollback_transaction()
             raise PromptException("An unexpected error occurred while deleting the prompt.") from e
 
-    def get_prompt(self, guid: str) -> Prompt:
+    async def get_prompt(self, guid: str) -> Prompt:
         """
         Retrieve a prompt from the database using its GUID.
 
@@ -156,7 +156,7 @@ class PromptService(PromptServiceInterface):
         except Exception as e:
             raise PromptException("An unexpected error occurred while fetching the prompt.") from e
 
-    def list_prompts(self) -> List[Prompt]:
+    async def list_prompts(self) -> List[Prompt]:
         """
         List all prompts in the database.
 
@@ -171,7 +171,7 @@ class PromptService(PromptServiceInterface):
         except Exception as e:
             raise PromptException("An unexpected error occurred while listing prompts.") from e
 
-    def update_tags_for_prompt(self, guid: str, tags: List[str]) -> None:
+    async def update_tags_for_prompt(self, guid: str, tags: List[str]) -> None:
         """
         Add or remove tags for a given prompt in the database.
 
@@ -197,7 +197,7 @@ class PromptService(PromptServiceInterface):
             db.rollback_transaction()
             raise PromptException("An error occurred while updating tags for the prompt.") from e
 
-    def update_classification_for_prompt(self, guid: str, classification: str) -> None:
+    async def update_classification_for_prompt(self, guid: str, classification: str) -> None:
         """
         Add or remove classifications for a given prompt in the database.
 
@@ -223,19 +223,19 @@ class PromptService(PromptServiceInterface):
             db.rollback_transaction()
             raise PromptException("An error occurred while updating classification for the prompt.") from e
 
-    def search_prompts(self, query: str) -> List[Prompt]:
+    async def search_prompts(self, query: str) -> List[Prompt]:
         """
         Search for prompts based on a given query.
         """
         return self.repo.search_prompts(query)
 
-    def get_prompts_by_tag(self, tag: str) -> List[Prompt]:
+    async def get_prompts_by_tag(self, tag: str) -> List[Prompt]:
         """
         Retrieve all prompts associated with a specific tag.
         """
         return self.repo.get_prompts_by_tag(tag)
 
-    def get_prompts_by_classification(self, classification: str) -> List[Prompt]:
+    async def get_prompts_by_classification(self, classification: str) -> List[Prompt]:
         """
         Retrieve all prompts associated with a specific classification.
         """

@@ -53,3 +53,16 @@ class EndpointNotFoundError(PromptException):
 class AuthenticationError(PromptException):
     def __init__(self, message="Authentication failed."):
         super().__init__(message)
+
+EXCEPTION_STATUS_CODES = {
+    DataValidationError: 400,       # Bad Request
+    ConstraintViolationError: 409,  # Conflict
+    PromptException: 500,           # Internal Server Error (Generic fallback)
+    DBConnectionError: 500,         # Internal Server Error (Generic fallback)
+    RecordNotFoundError: 404,       # Not Found
+    UnauthorizedError: 401,         # Unauthorized
+    OperationNotAllowedError: 403,  # Forbidden
+    BadRequestError: 400,           # Bad Request
+    EndpointNotFoundError: 404,     # Not Found
+    AuthenticationError: 401,       # Unauthorized
+}
