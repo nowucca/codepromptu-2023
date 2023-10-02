@@ -22,4 +22,9 @@ class Prompt(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime]  # It's optional since it'll be updated by the service
 
-# We can add more models as we expand the system
+
+class User(BaseModel):
+    id: int
+    guid: str
+    username: str
+    password: str

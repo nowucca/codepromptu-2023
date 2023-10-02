@@ -13,8 +13,9 @@ app = FastAPI()
 app.include_router(public_prompts.router, prefix="/public/prompt", tags=["Public Prompts"])
 app.include_router(private_prompts.router, prefix="/private/prompt", tags=["Private Per-user Prompts"])
 
-app.add_middleware(RequestIdMiddleware)
+# Innermost first
 app.add_middleware(LoggingMiddleware)
+app.add_middleware(RequestIdMiddleware)
 
 
 @app.exception_handler(PromptException)

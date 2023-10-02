@@ -7,21 +7,19 @@ from datetime import datetime
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from service import set_request_id, request_id_var
+from service import set_request_id, get_request_id
 
-
-# Import the logging config to ensure it's set up
 
 class RequestIdMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
         super().__init__(app)
         self.app = app
-        self.logger = logging.getLogger(__name__)
 
     async def dispatch(self, request: Request, call_next):
-        request_id_var.set(self._generate_request_id())
+        request_id = self._generate_request_id()
+        set_request_id(request_id)
         response: Response = await call_next(request)
-        request_id_var.set("UNKNOWN")
+        set_request_id("")
         return response
 
     @staticmethod
@@ -40,7 +38,6 @@ def _hashify(request_id):
     return hash_value
 
 
-
 class LoggingMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
         super().__init__(app)
@@ -48,23 +45,33 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         self.logger = logging.getLogger(__name__)
 
     async def dispatch(self, request: Request, call_next):
-        self.log_start()
-
+        self.log_start(request)
+        current_time = datetime.now()
         response: Response = await call_next(request)
-
-        self.log_end()
+        duration = datetime.now() - current_time
+        self.log_end(duration, request, response)
         return response
 
-    def log_start(self):
-        request_id = request_id_var.get()
-        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S,%f')
+    @staticmethod
+    def log_start(request: Request):
+        request_id = get_request_id()
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S,%f')[:-3]
         thread_id = _hashify(str(threading.current_thread().ident))
-        log_string = f"{current_time} INFO {request_id} [{thread_id}] REQUEST START"
-        self.logger.info(log_string)
+        request_method = request.method
+        request_uri = request.url
+        log_string = (f"{current_time} INFO tc=\"{request_id}\" " +
+                      f"[{thread_id}] REQUEST START: {request_method} {request_uri}")
+        print(log_string)
 
-    def log_end(self, status_code):
-        request_id = request_id_var.get()
-        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S,%f')
+    @staticmethod
+    def log_end(duration, request: Request, response: Response):
+        request_id = get_request_id()
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S,%f')[:-3]
         thread_id = _hashify(str(threading.current_thread().ident))
-        log_string = f"{current_time} INFO {request_id} [{thread_id}] REQUEST END {status_code}"
-        self.logger.info(log_string)
+        request_method = request.method
+        request_uri = request.url
+        status_code = response.status_code
+        log_string = (f"{current_time} INFO tc=\"{request_id}\" "
+                      + f"[{thread_id}] REQUEST END: {request_method} {request_uri} "
+                      + f"response=\"{status_code}\" duration=\"{duration}ms\"")
+        print(log_string)
