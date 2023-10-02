@@ -14,36 +14,36 @@ from data.prompt_repository import PromptRepositoryInterface
 from .variables import VariablesService
 
 
-class PromptServiceInterface():
+class PromptServiceInterface:
 
-    async def create_prompt(self, prompt: Prompt, user: User) -> str:
+    async def create_prompt(self, prompt: Prompt, author: Optional[User] = None) -> str:
         pass
 
-    async def update_prompt(self, prompt: Prompt) -> None:
+    async def update_prompt(self, prompt: Prompt, user: Optional[User] = None) -> None:
         pass
 
-    async def delete_prompt(self, guid: str) -> None:
+    async def delete_prompt(self, guid: str, user: Optional[User] = None) -> None:
         pass
 
-    async def get_prompt(self, guid: str) -> Prompt:
+    async def get_prompt(self, guid: str, user: Optional[User] = None) -> Prompt:
         pass
 
-    async def list_prompts(self) -> List[Prompt]:
+    async def list_prompts(self, user: Optional[User] = None) -> List[Prompt]:
         pass
 
-    async def update_tags_for_prompt(self, guid: str, tags: List[str]) -> None:
+    async def update_tags_for_prompt(self, guid: str, tags: List[str], user: Optional[User] = None) -> None:
         pass
 
-    async def update_classification_for_prompt(self, guid: str, classification: str) -> None:
+    async def update_classification_for_prompt(self, guid: str, classification: str, user: Optional[User] = None) -> None:
         pass
 
-    async def search_prompts(self, query: str) -> List[Prompt]:
+    async def search_prompts(self, query: str, user: Optional[User] = None) -> List[Prompt]:
         pass
 
-    async def get_prompts_by_tag(self, tag: str) -> List[Prompt]:
+    async def get_prompts_by_tag(self, tag: str, user: Optional[User] = None) -> List[Prompt]:
         pass
 
-    async def get_prompts_by_classification(self, classification: str) -> List[Prompt]:
+    async def get_prompts_by_classification(self, classification: str, user: Optional[User] = None) -> List[Prompt]:
         pass
 
 class PromptService(PromptServiceInterface):
@@ -74,7 +74,7 @@ class PromptService(PromptServiceInterface):
             prompt.guid = make_guid()
             with DatabaseContext() as db:
                 db.begin_transaction()
-                guid = self.repo.create_prompt(prompt)
+                guid = self.repo.create_prompt(prompt, author)
                 db.commit_transaction()
                 return guid
         except PromptException as known_exc:
@@ -84,7 +84,7 @@ class PromptService(PromptServiceInterface):
             db.rollback_transaction()
             raise PromptException("An unexpected error occurred while processing your request.") from e
 
-    async def update_prompt(self, prompt: Prompt) -> None:
+    async def update_prompt(self, prompt: Prompt, user: Optional[User] = None) -> None:
         """
         Update an existing prompt in the database.
 
@@ -95,12 +95,13 @@ class PromptService(PromptServiceInterface):
             PromptException: If any other exception is encountered.
             ConstraintViolationError: If a database constraint is violated.
             RecordNotFoundError: If the prompt isn't found in the DB.
+            :param user:
         """
         try:
             self.variables_service.derive_variables(prompt)
             with DatabaseContext() as db:
                 db.begin_transaction()
-                self.repo.update_prompt(prompt)
+                self.repo.update_prompt(prompt, user)
                 db.commit_transaction()
         except PromptException as known_exc:
             db.rollback_transaction()
@@ -109,7 +110,7 @@ class PromptService(PromptServiceInterface):
             db.rollback_transaction()
             raise PromptException("An unexpected error occurred while updating the prompt.") from e
 
-    async def delete_prompt(self, guid: str) -> None:
+    async def delete_prompt(self, guid: str, user: Optional[User] = None) -> None:
         """
         Delete a prompt from the database using its GUID.
 
@@ -124,7 +125,7 @@ class PromptService(PromptServiceInterface):
         try:
             with DatabaseContext() as db:
                 db.begin_transaction()
-                self.repo.delete_prompt(guid)
+                self.repo.delete_prompt(guid, user)
                 db.commit_transaction()
         except PromptException as known_exc:
             db.rollback_transaction()
@@ -133,7 +134,7 @@ class PromptService(PromptServiceInterface):
             db.rollback_transaction()
             raise PromptException("An unexpected error occurred while deleting the prompt.") from e
 
-    async def get_prompt(self, guid: str) -> Prompt:
+    async def get_prompt(self, guid: str, user: Optional[User] = None) -> Prompt:
         """
         Retrieve a prompt from the database using its GUID.
 
@@ -149,13 +150,13 @@ class PromptService(PromptServiceInterface):
         """
         try:
             with DatabaseContext():
-                return self.repo.get_prompt(guid)
+                return self.repo.get_prompt(guid, user)
         except PromptException as known_exc:
             raise known_exc
         except Exception as e:
             raise PromptException("An unexpected error occurred while fetching the prompt.") from e
 
-    async def list_prompts(self) -> List[Prompt]:
+    async def list_prompts(self, user: Optional[User] = None) -> List[Prompt]:
         """
         List all prompts in the database.
 
@@ -167,11 +168,11 @@ class PromptService(PromptServiceInterface):
         """
         try:
             with DatabaseContext():
-                return self.repo.list_prompts()
+                return self.repo.list_prompts(user)
         except Exception as e:
             raise PromptException("An unexpected error occurred while listing prompts.") from e
 
-    async def update_tags_for_prompt(self, guid: str, tags: List[str]) -> None:
+    async def update_tags_for_prompt(self, guid: str, tags: List[str], user: Optional[User] = None) -> None:
         """
         Add or remove tags for a given prompt in the database.
 
@@ -188,7 +189,7 @@ class PromptService(PromptServiceInterface):
             with DatabaseContext() as db:
                 db.begin_transaction()
                 if tags:
-                    self.repo.add_remove_tags_for_prompt(guid, tags)
+                    self.repo.add_remove_tags_for_prompt(guid, tags, user)
                 db.commit_transaction()
         except (ConstraintViolationError, RecordNotFoundError) as known_exc:
             db.rollback_transaction()
@@ -197,7 +198,7 @@ class PromptService(PromptServiceInterface):
             db.rollback_transaction()
             raise PromptException("An error occurred while updating tags for the prompt.") from e
 
-    async def update_classification_for_prompt(self, guid: str, classification: str) -> None:
+    async def update_classification_for_prompt(self, guid: str, classification: str, user: Optional[User] = None) -> None:
         """
         Add or remove classifications for a given prompt in the database.
 
@@ -214,7 +215,7 @@ class PromptService(PromptServiceInterface):
             with DatabaseContext() as db:
                 db.begin_transaction()
                 if classification:
-                    self.repo.add_remove_classification_for_prompt(guid, classification)
+                    self.repo.add_remove_classification_for_prompt(guid, classification, user)
                 db.commit_transaction()
         except (ConstraintViolationError, RecordNotFoundError) as known_exc:
             db.rollback_transaction()
@@ -223,24 +224,24 @@ class PromptService(PromptServiceInterface):
             db.rollback_transaction()
             raise PromptException("An error occurred while updating classification for the prompt.") from e
 
-    async def search_prompts(self, query: str) -> List[Prompt]:
+    async def search_prompts(self, query: str, user: Optional[User] = None) -> List[Prompt]:
         """
         Search for prompts based on a given query.
         """
         with DatabaseContext():
-            return self.repo.search_prompts(query)
+            return self.repo.search_prompts(query, user)
 
-    async def get_prompts_by_tag(self, tag: str) -> List[Prompt]:
+    async def get_prompts_by_tag(self, tag: str, user: Optional[User] = None) -> List[Prompt]:
         """
         Retrieve all prompts associated with a specific tag.
         """
         with DatabaseContext():
-            return self.repo.get_prompts_by_tag(tag)
+            return self.repo.get_prompts_by_tag(tag, user)
 
-    async def get_prompts_by_classification(self, classification: str) -> List[Prompt]:
+    async def get_prompts_by_classification(self, classification: str, user: Optional[User] = None) -> List[Prompt]:
         """
         Retrieve all prompts associated with a specific classification.
         """
         with DatabaseContext():
-            return self.repo.get_prompts_by_classification(classification)
+            return self.repo.get_prompts_by_classification(classification, user)
 
