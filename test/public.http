@@ -19,7 +19,7 @@ Authorization: Basic {{basic_credential}}
 ###
 
 ### Test Update a Public Prompt by GUID
-PUT {{base_url}}/public/prompt/sample-guid-123
+PUT {{base_url}}/public/prompt/bbad9b56d7ba4f0fb91d1b90d431df13
 Authorization: Basic {{basic_credential}}
 Content-Type: application/json
 

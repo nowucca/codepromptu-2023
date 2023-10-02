@@ -201,7 +201,7 @@ class MySQLPromptRepository(PromptRepositoryInterface):
         query = "SELECT author_id FROM prompts WHERE guid = %s"
         params = (guid,)
         db.cursor.execute(query, params)
-        author_id = db.cursor.fetchone()['author']
+        author_id = db.cursor.fetchone()['author_id']
         if author_id != (user.id if user else None):
             raise UnauthorizedError(f"Attempting to update a prompt that does not belong to the user or is not NULL.")
 

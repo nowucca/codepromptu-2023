@@ -33,7 +33,7 @@ def require_admin_user(credentials: HTTPBasicCredentials = Depends(security),
     user = user_service.get_user_by_username(credentials.username)
     if user is not None and credentials.password == user.password and user.username == "steve72":
         return user
-    return user
+    return None
 
 def require_current_user(credentials: HTTPBasicCredentials = Depends(security),
                          user_service: UserService = Depends(get_user_service)) -> User:
