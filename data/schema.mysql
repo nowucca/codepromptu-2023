@@ -1,0 +1,80 @@
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS prompt_io_variables;
+DROP TABLE IF EXISTS prompt_tags;
+DROP TABLE IF EXISTS prompts;
+DROP TABLE IF EXISTS classifications;
+DROP TABLE IF EXISTS tags;
+DROP TABLE IF EXISTS io_variables;
+DROP TABLE IF EXISTS users;
+
+-- users Table
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    guid VARCHAR(255) NOT NULL,
+    username VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    UNIQUE INDEX users_U1 (guid),
+    UNIQUE INDEX users_U2 (username)
+);
+
+-- io_variables Table
+CREATE TABLE io_variables (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    guid VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    type ENUM('input', 'output') DEFAULT 'input',
+    expected_format VARCHAR(255) DEFAULT 'text/plain',
+    UNIQUE INDEX io_variables_U1 (guid)
+);
+
+-- tags Table
+CREATE TABLE tags (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    guid VARCHAR(255) NOT NULL,
+    tag_name VARCHAR(255) NOT NULL,
+    UNIQUE INDEX tags_U1 (guid),
+    UNIQUE INDEX tags_U2 (tag_name)
+);
+
+-- classifications Table
+CREATE TABLE classifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    guid VARCHAR(255) NOT NULL,
+    classification_name VARCHAR(255) NOT NULL,
+    UNIQUE INDEX classifications_U1 (guid),
+    UNIQUE INDEX classifications_U2 (classification_name)
+);
+
+-- prompts Table
+CREATE TABLE prompts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    guid VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    author_id INT,
+    classification_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE INDEX prompts_U1 (guid),
+    CONSTRAINT prompts_F1 FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL,
+    CONSTRAINT prompts_F2 FOREIGN KEY (classification_id) REFERENCES classifications(id),
+    CONSTRAINT prompts_U2 UNIQUE (id, author_id) -- Ensure that a prompt is owned by one author or is public
+);
+
+-- Mapping tables to associate Prompts with Tags and IOVariables
+CREATE TABLE prompt_tags (
+    prompt_id INT,
+    tag_id INT,
+    UNIQUE INDEX prompt_tags_I1 (prompt_id, tag_id),
+    CONSTRAINT prompt_tags_F1 FOREIGN KEY (prompt_id) REFERENCES prompts(id),
+    CONSTRAINT prompt_tags_F2 FOREIGN KEY (tag_id) REFERENCES tags(id)
+);
+
+CREATE TABLE prompt_io_variables (
+    prompt_id INT,
+    io_variable_id INT,
+    UNIQUE INDEX prompt_io_variables_I1 (prompt_id, io_variable_id),
+    CONSTRAINT prompt_io_variables_F1 FOREIGN KEY (prompt_id) REFERENCES prompts(id),
+    CONSTRAINT prompt_io_variables_F2 FOREIGN KEY (io_variable_id) REFERENCES io_variables(id)
+);
