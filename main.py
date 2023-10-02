@@ -10,8 +10,8 @@ app = FastAPI()
 # Register routers
 
 # Include the router with a prefix
-app.include_router(public_prompts.router, prefix="/public/prompt", tags=["Public Prompts"])
-app.include_router(private_prompts.router, prefix="/private/prompt", tags=["Private Per-user Prompts"])
+app.include_router(public_prompts.router, prefix="/public", tags=["Public Endpoints"])
+app.include_router(private_prompts.router, prefix="/private", tags=["Private Per-user Endpoints"])
 
 # Innermost first
 app.add_middleware(LoggingMiddleware)

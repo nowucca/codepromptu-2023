@@ -6,39 +6,32 @@ from core.exceptions import (
     RecordNotFoundError,
     ConstraintViolationError
 )
-from core.models import Prompt
+from core.models import Prompt, User
 from data import DatabaseContext
 from data.prompt_repository import PromptRepositoryInterface
 from .variables import VariablesService
 
 
-class PromptServiceInterface(ABC):
+class PromptServiceInterface():
 
-    @abstractmethod
-    async def create_prompt(self, prompt: Prompt) -> str:
+    async def create_prompt(self, prompt: Prompt, user: User) -> str:
         pass
 
-    @abstractmethod
     async def update_prompt(self, prompt: Prompt) -> None:
         pass
 
-    @abstractmethod
     async def delete_prompt(self, guid: str) -> None:
         pass
 
-    @abstractmethod
     async def get_prompt(self, guid: str) -> Prompt:
         pass
 
-    @abstractmethod
     async def list_prompts(self) -> List[Prompt]:
         pass
 
-    @abstractmethod
     async def update_tags_for_prompt(self, guid: str, tags: List[str]) -> None:
         pass
 
-    @abstractmethod
     async def update_classification_for_prompt(self, guid: str, classification: str) -> None:
         pass
 
@@ -57,7 +50,7 @@ class PromptService(PromptServiceInterface):
         self.repo = repository
         self.variables_service = VariablesService()
 
-    async def create_prompt(self, prompt: Prompt) -> str:
+    async def create_prompt(self, prompt: Prompt, user: User = None) -> str:
         """
         Create a new prompt in the database.
 
@@ -71,6 +64,7 @@ class PromptService(PromptServiceInterface):
             PromptException: If any other exception is encountered.
             DataValidationError: If the provided prompt is invalid or if there's a validation error in the DB layer.
             ConstraintViolationError: If a database constraint is violated.
+            :param user:
         """
         try:
             self.variables_service.derive_variables(prompt)
@@ -150,7 +144,8 @@ class PromptService(PromptServiceInterface):
             RecordNotFoundError: If the prompt isn't found in the DB.
         """
         try:
-            return self.repo.get_prompt(guid)
+            with DatabaseContext():
+                return self.repo.get_prompt(guid)
         except PromptException as known_exc:
             raise known_exc
         except Exception as e:
@@ -167,7 +162,8 @@ class PromptService(PromptServiceInterface):
             PromptException: If any other exception is encountered.
         """
         try:
-            return self.repo.list_prompts()
+            with DatabaseContext():
+                return self.repo.list_prompts()
         except Exception as e:
             raise PromptException("An unexpected error occurred while listing prompts.") from e
 
@@ -227,16 +223,19 @@ class PromptService(PromptServiceInterface):
         """
         Search for prompts based on a given query.
         """
-        return self.repo.search_prompts(query)
+        with DatabaseContext():
+            return self.repo.search_prompts(query)
 
     async def get_prompts_by_tag(self, tag: str) -> List[Prompt]:
         """
         Retrieve all prompts associated with a specific tag.
         """
-        return self.repo.get_prompts_by_tag(tag)
+        with DatabaseContext():
+            return self.repo.get_prompts_by_tag(tag)
 
     async def get_prompts_by_classification(self, classification: str) -> List[Prompt]:
         """
         Retrieve all prompts associated with a specific classification.
         """
-        return self.repo.get_prompts_by_classification(classification)
+        with DatabaseContext():
+            return self.repo.get_prompts_by_classification(classification)
