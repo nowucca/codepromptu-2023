@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.models import Prompt
 from service.prompt_service import PromptServiceInterface
+from web.dependencies import get_current_user, get_prompt_service
 
-router = APIRouter()
-
+router = APIRouter(dependencies=[Depends(get_current_user), Depends(get_prompt_service)])
 
 @router.post("/", status_code=201, summary="Add a New Prompt")
 async def add_prompt(prompt: Prompt, service: PromptServiceInterface = Depends()):
