@@ -11,7 +11,7 @@ from core.exceptions import (
 from core.models import Prompt, User
 from data import DatabaseContext
 from data.prompt_repository import PromptRepositoryInterface
-from .variables import VariablesService
+from .variables_service import VariablesService
 
 
 class PromptServiceInterface:
