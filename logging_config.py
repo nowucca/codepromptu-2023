@@ -22,4 +22,3 @@ LOGGING_CONFIG = {
 }
 
 logging.config.dictConfig(LOGGING_CONFIG)
-Compare this snippet from core/exceptions.py:

@@ -42,6 +42,14 @@ class PromptServiceInterface(ABC):
     def update_classification_for_prompt(self, guid: str, classification: str) -> None:
         pass
 
+    def search_prompts(self, query: str) -> List[Prompt]:
+        pass
+
+    def get_prompts_by_tag(self, tag: str) -> List[Prompt]:
+        pass
+
+    def get_prompts_by_classification(self, classification: str) -> List[Prompt]:
+        pass
 
 class PromptService(PromptServiceInterface):
 
