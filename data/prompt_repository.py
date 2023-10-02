@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from core import make_guid
 from core.exceptions import ConstraintViolationError, DataValidationError, UnauthorizedError
-from core.models import Prompt, Variable, User, PromptCreate
+from core.models import Prompt, Variable, User, PromptCreate, PromptUpdate
 from data import get_current_db_context
 
 
@@ -11,7 +11,7 @@ class PromptRepositoryInterface:
     def create_prompt(self, prompt: PromptCreate, author: Optional[User] = None) -> str:
         raise NotImplementedError
 
-    def update_prompt(self, prompt: Prompt, user: Optional[User] = None) -> None:
+    def update_prompt(self, prompt: PromptUpdate, user: Optional[User] = None) -> None:
         raise NotImplementedError
 
     def delete_prompt(self, guid: str, user: Optional[User] = None) -> None:
@@ -156,14 +156,14 @@ class MySQLPromptRepository(PromptRepositoryInterface):
             else:
                 raise DataValidationError(message=f"Error occurred while reading the prompt: {e}")
 
-    def update_prompt(self, prompt: Prompt, user: Optional[User] = None) -> None:
+    def update_prompt(self, prompt: PromptUpdate, user: Optional[User] = None) -> None:
         db = get_current_db_context()
 
         self._check_prompt_ownership(prompt.guid, user)
 
         try:
             # Update main prompt content
-            db.cursor.execute("UPDATE prompts SET content = %s, updated_at = CURRENT_TIMESTAMP WHERE guid = %s",
+            db.cursor.execute("UPDATE prompts SET content = %s  WHERE guid = %s",
                               (prompt.content, prompt.guid))
 
             # Update I/O variables. For simplicity, we'll remove all current associations and re-add them

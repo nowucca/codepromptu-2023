@@ -17,10 +17,11 @@ class PromptCreate(BaseModel):
     tags: Optional[List[str]] = None
     classification: Optional[str] =None
 
-class Prompt(PromptCreate):
-    id: int
+class PromptUpdate(PromptCreate):
     guid: str
-    content: str
+
+class Prompt(PromptUpdate):
+    id: int
     author: Optional[int]  # Could be a public prompt, no author
     created_at: datetime
     updated_at: Optional[datetime]  # It's optional since it'll be updated by the service

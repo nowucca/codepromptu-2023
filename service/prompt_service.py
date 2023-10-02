@@ -8,7 +8,7 @@ from core.exceptions import (
     RecordNotFoundError,
     ConstraintViolationError
 )
-from core.models import Prompt, User, PromptCreate
+from core.models import Prompt, User, PromptCreate, PromptUpdate
 from data import DatabaseContext
 from data.prompt_repository import PromptRepositoryInterface
 from .variables_service import VariablesService
@@ -19,7 +19,7 @@ class PromptServiceInterface:
     def create_prompt(self, prompt: PromptCreate, author: Optional[User] = None) -> str:
         pass
 
-    def update_prompt(self, prompt: Prompt, user: Optional[User] = None) -> None:
+    def update_prompt(self, prompt: PromptUpdate, user: Optional[User] = None) -> None:
         pass
 
     def delete_prompt(self, guid: str, user: Optional[User] = None) -> None:
@@ -84,7 +84,7 @@ class PromptService(PromptServiceInterface):
                 db.rollback_transaction()
                 raise PromptException("An unexpected error occurred while processing your request.") from e
 
-    def update_prompt(self, prompt: Prompt, user: Optional[User] = None) -> None:
+    def update_prompt(self, prompt: PromptUpdate, user: Optional[User] = None) -> None:
         """
         Update an existing prompt in the database.
 
