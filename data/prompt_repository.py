@@ -1,79 +1,68 @@
 import traceback
-from typing import List
+from typing import List, Optional
 
-from core.exceptions import ConstraintViolationError, DataValidationError
-from core.models import Prompt, Variable
+from core import make_guid
+from core.exceptions import ConstraintViolationError, DataValidationError, UnauthorizedError
+from core.models import Prompt, Variable, User
 from data import get_current_db_context
 
 
 class PromptRepositoryInterface:
-    def create_prompt(self, prompt: Prompt) -> str:
+    def create_prompt(self, prompt: Prompt, author: Optional[User] = None) -> str:
         raise NotImplementedError
 
-    def update_prompt(self, prompt: Prompt) -> None:
+    def update_prompt(self, prompt: Prompt, user: Optional[User] = None) -> None:
         raise NotImplementedError
 
-    def delete_prompt(self, guid: str) -> None:
+    def delete_prompt(self, guid: str, user: Optional[User] = None) -> None:
         raise NotImplementedError
 
-    def get_prompt(self, guid: str) -> Prompt:
+    def get_prompt(self, guid: str, user: Optional[User] = None) -> Prompt:
         raise NotImplementedError
 
-    def list_prompts(self) -> List[Prompt]:
+    def list_prompts(self, user: Optional[User] = None) -> List[Prompt]:
         raise NotImplementedError
 
-    def add_remove_tags_for_prompt(self, guid: str, tags: List[str]) -> None:
+    def add_remove_tags_for_prompt(self, guid: str, tags: List[str], user: Optional[User] = None) -> None:
         raise NotImplementedError
 
-    def add_remove_classification_for_prompt(self, guid: str, classification: str) -> None:
+    def add_remove_classification_for_prompt(self, guid: str, classification: str, user: Optional[User] = None) -> None:
         raise NotImplementedError
 
-    def search_prompts(self, query: str) -> List[Prompt]:
+    def search_prompts(self, query: str, user: Optional[User] = None) -> List[Prompt]:
         raise NotImplementedError
 
-    def get_prompts_by_tag(self, tag: str) -> List[Prompt]:
+    def get_prompts_by_tag(self, tag: str, user: Optional[User] = None) -> List[Prompt]:
         raise NotImplementedError
 
-    def get_prompts_by_classification(self, classification: str) -> List[Prompt]:
+    def get_prompts_by_classification(self, classification: str, user: Optional[User] = None) -> List[Prompt]:
         raise NotImplementedError
 
 
 class MySQLPromptRepository(PromptRepositoryInterface):
 
-    def create_prompt(self, prompt: Prompt) -> str:
+    def create_prompt(self, prompt: Prompt, author: Optional[User] = None) -> str:
         db = get_current_db_context()
         try:
             # Insert main prompt data
-            db.cursor.execute("INSERT INTO prompts (guid, content, author_id, created_at, updated_at ) VALUES (%s, %s, %s, %s)",
-                              (prompt.guid, prompt.content, prompt.author,  prompt.created_at, prompt.updated_at))
+            db.cursor.execute("INSERT INTO prompts (guid, content, author_id, created_at, updated_at ) VALUES (%s, %s, %s, %s, %s)",
+                              (prompt.guid, prompt.content, author.id if author else None,  prompt.created_at, prompt.updated_at))
             prompt_id = db.cursor.lastrowid
+            prompt.internal_id = prompt_id
 
             # Handle I/O variables
             for var in prompt.input_variables + prompt.output_variables:
+                guid = make_guid()
                 db.cursor.execute(
-                    "INSERT INTO io_variables (name, description, expected_format, type) VALUES (%s, %s, %s, %s)",
+                    "INSERT INTO io_variables (guid, name, description, expected_format, type) VALUES (%s, %s, %s, %s, %s)",
                     (
-                        var.name, var.description, var.expected_format,
+                        guid, var.name, var.description, var.expected_format,
                         'input' if var in prompt.input_variables else 'output'))
                 io_variable_id = db.cursor.lastrowid
                 db.cursor.execute("INSERT INTO prompt_io_variables (prompt_id, io_variable_id) VALUES (%s, %s)",
                                   (prompt_id, io_variable_id))
 
-            # Handle tags
-            for tag in prompt.tags:
-                db.cursor.execute("INSERT IGNORE INTO tags (tag_name) VALUES (%s)", (tag,))
-                db.cursor.execute("SELECT id FROM tags WHERE tag_name = %s", (tag,))
-                tag_id = db.cursor.fetchone()['id']
-                db.cursor.execute("INSERT INTO prompt_tags (prompt_id, tag_id) VALUES (%s, %s)",
-                                  (prompt_id, tag_id))
-
-            # Handle classification
-            db.cursor.execute("INSERT IGNORE INTO classifications (classification_name) VALUES (%s)",
-                              (prompt.classification,))
-            db.cursor.execute("SELECT id FROM classifications WHERE classification_name = %s", (prompt.classification,))
-            classification_id = db.cursor.fetchone()['id']
-            db.cursor.execute("UPDATE prompts SET classification_id = %s WHERE id = %s",
-                              (classification_id, prompt_id))
+            self._store_tags_classification(prompt, prompt_id)
 
             return prompt.guid
         except Exception as e:
@@ -83,11 +72,36 @@ class MySQLPromptRepository(PromptRepositoryInterface):
             else:
                 raise DataValidationError(message=f"Error occurred while saving the prompt: {e}")
 
-    def get_prompt(self, guid: str) -> Prompt:
+    def _store_tags_classification(self, prompt, prompt_id):
+        db = get_current_db_context()
+        # Handle tags
+        for tag in prompt.tags:
+            db.cursor.execute("INSERT IGNORE INTO tags (tag_name) VALUES (%s)", (tag,))
+            db.cursor.execute("SELECT id FROM tags WHERE tag_name = %s", (tag,))
+            tag_id = db.cursor.fetchone()['id']
+            db.cursor.execute("INSERT INTO prompt_tags (prompt_id, tag_id) VALUES (%s, %s)",
+                              (prompt_id, tag_id))
+        # Handle classification
+        db.cursor.execute("INSERT IGNORE INTO classifications (classification_name) VALUES (%s)",
+                          (prompt.classification,))
+        db.cursor.execute("SELECT id FROM classifications WHERE classification_name = %s", (prompt.classification,))
+        classification_id = db.cursor.fetchone()['id']
+        db.cursor.execute("UPDATE prompts SET classification_id = %s WHERE id = %s",
+                          (classification_id, prompt_id))
+
+    def get_prompt(self, guid: str, user: Optional[User] = None) -> Optional[Prompt]:
         db = get_current_db_context()
         try:
             # Fetch basic prompt data
-            db.cursor.execute("SELECT * FROM prompts WHERE guid = %s", (guid,))
+            if user:
+                db.cursor.execute("""
+                            SELECT * FROM prompts WHERE guid = %s AND author_id = %s
+                        """, (guid, user.id))
+            else:
+                db.cursor.execute("""
+                            SELECT * FROM prompts WHERE guid = %s AND author_id IS NULL
+                        """, (guid,))
+
             prompt_row = db.cursor.fetchone()
             if not prompt_row:
                 return None
@@ -140,8 +154,10 @@ class MySQLPromptRepository(PromptRepositoryInterface):
             else:
                 raise DataValidationError(message=f"Error occurred while reading the prompt: {e}")
 
-    def update_prompt(self, prompt: Prompt) -> None:
+    def update_prompt(self, prompt: Prompt, user: Optional[User] = None) -> None:
         db = get_current_db_context()
+
+        self._check_prompt_ownership(prompt.guid, user)
 
         try:
             # Update main prompt content
@@ -154,31 +170,22 @@ class MySQLPromptRepository(PromptRepositoryInterface):
             db.cursor.execute("DELETE FROM prompt_io_variables WHERE prompt_id = %s", (prompt_id,))
 
             for var in prompt.input_variables + prompt.output_variables:
-                db.cursor.execute(
-                    "INSERT INTO io_variables (name, description, expected_format, type) VALUES (%s, %s, %s, %s) ON DUPLICATE KEY UPDATE name = %s, description = %s, expected_format = %s",
-                    (var.name, var.description, var.expected_format,
+                variable_guid = make_guid()
+                db.cursor.execute("""
+                    INSERT INTO io_variables (guid, name, description, expected_format, type) 
+                    VALUES (%s, %s, %s, %s, %s) 
+                    ON DUPLICATE KEY UPDATE name = %s, description = %s, expected_format = %s
+                
+                """,
+                    (variable_guid, var.name, var.description, var.expected_format,
                      'input' if var in prompt.input_variables else 'output',
                      var.name, var.description, var.expected_format))
                 io_variable_id = db.cursor.lastrowid
                 db.cursor.execute("INSERT INTO prompt_io_variables (prompt_id, io_variable_id) VALUES (%s, %s)",
                                   (prompt_id, io_variable_id))
 
-            # Update tags. Again, we'll remove current associations for simplicity
-            db.cursor.execute("DELETE FROM prompt_tags WHERE prompt_id = %s", (prompt_id,))
-            for tag in prompt.tags:
-                db.cursor.execute("INSERT IGNORE INTO tags (tag_name) VALUES (%s)", (tag,))
-                db.cursor.execute("SELECT id FROM tags WHERE tag_name = %s", (tag,))
-                tag_id = db.cursor.fetchone()['id']
-                db.cursor.execute("INSERT INTO prompt_tags (prompt_id, tag_id) VALUES (%s, %s)",
-                                  (prompt_id, tag_id))
+            self._store_tags_classification(prompt, prompt_id)
 
-            # Update classification
-            db.cursor.execute("INSERT IGNORE INTO classifications (classification_name) VALUES (%s)",
-                              (prompt.classification,))
-            db.cursor.execute("SELECT id FROM classifications WHERE classification_name = %s", (prompt.classification,))
-            classification_id = db.cursor.fetchone()['id']
-            db.cursor.execute("UPDATE prompts SET classification_id = %s WHERE id = %s",
-                              (classification_id, prompt_id))
         except Exception as e:
             traceback.print_exc()
             if 'constraint' in str(e).lower():
@@ -186,8 +193,19 @@ class MySQLPromptRepository(PromptRepositoryInterface):
             else:
                 raise DataValidationError(message=f"Error occurred while updating the prompt: {e}")
 
-    def delete_prompt(self, guid: str) -> None:
+    @staticmethod
+    def _check_prompt_ownership(guid, user):
         db = get_current_db_context()
+        query = "SELECT author_id FROM prompts WHERE guid = %s"
+        params = (guid,)
+        db.cursor.execute(query, params)
+        author_id = db.cursor.fetchone()['author']
+        if author_id != (user.id if user else None):
+            raise UnauthorizedError(f"Attempting to update a prompt that does not belong to the user or is not NULL.")
+
+    def delete_prompt(self, guid: str, user: Optional[User] = None) -> None:
+        db = get_current_db_context()
+        self._check_prompt_ownership(guid, user)
 
         try:
             # Fetch the ID for the given prompt guid
@@ -206,12 +224,19 @@ class MySQLPromptRepository(PromptRepositoryInterface):
             else:
                 raise DataValidationError(message=f"Error occurred while deleting the prompt: {e}")
 
-    def list_prompts(self) -> List[Prompt]:
+    def list_prompts(self, user: Optional[User] = None) -> List[Prompt]:
         db = get_current_db_context()
 
         try:
-            # Fetch all prompt details
-            db.cursor.execute("SELECT * FROM prompts")
+            # Adjust the query based on the presence of the user parameter
+            if user:
+                db.cursor.execute("""
+                            SELECT * FROM prompts WHERE author_id = %s
+                        """, (user.id,))
+            else:
+                db.cursor.execute("""
+                            SELECT * FROM prompts WHERE author_id IS NULL
+                        """)
             prompt_datas = db.cursor.fetchall()
 
             prompts = []
@@ -261,12 +286,19 @@ class MySQLPromptRepository(PromptRepositoryInterface):
             else:
                 raise DataValidationError(message=f"Error occurred while listing the prompts: {e}")
 
-    def add_remove_tags_for_prompt(self, guid: str, tags: List[str]) -> None:
+    def add_remove_tags_for_prompt(self, guid: str, tags: List[str], user: Optional[User] = None) -> None:
         db = get_current_db_context()
-
+        self._check_prompt_ownership(guid, user)
         try:
             # Fetch the ID for the given prompt guid
-            db.cursor.execute("SELECT id FROM prompts WHERE guid = %s", (guid,))
+            if user:
+                db.cursor.execute("""
+                            SELECT id FROM prompts WHERE guid = %s AND author_id = %s
+                        """, (guid, user.id,))
+            else:
+                db.cursor.execute("""
+                            SELECT id FROM prompts WHERE guid = %s AND author_id IS NULL
+                        """, (guid,))
             prompt_id = db.cursor.fetchone()['id']
 
             # Get the existing tags for the prompt
@@ -287,7 +319,8 @@ class MySQLPromptRepository(PromptRepositoryInterface):
                 db.cursor.execute("SELECT id FROM tags WHERE tag_name = %s", (tag,))
                 tag_id = db.cursor.fetchone()
                 if not tag_id:
-                    db.cursor.execute("INSERT INTO tags(tag_name) VALUES (%s)", (tag,))
+                    tag_guid = make_guid()
+                    db.cursor.execute("INSERT INTO tags(guid, tag_name) VALUES (%s, %s)", (tag_guid, tag,))
                     tag_id = db.cursor.fetchone()['id']
 
                 # Add the tag association to the prompt
@@ -305,15 +338,17 @@ class MySQLPromptRepository(PromptRepositoryInterface):
             else:
                 raise DataValidationError(message=f"Error occurred while  changing tags on the prompts: {e}")
 
-    def add_remove_classification_for_prompt(self, guid: str, classification: str) -> None:
+    def add_remove_classification_for_prompt(self, guid: str, classification: str, user: Optional[User] = None) -> None:
         db = get_current_db_context()
+        self._check_prompt_ownership(guid, user)
 
         try:
             # Check if the classification exists in the classifications table
             db.cursor.execute("SELECT id FROM classifications WHERE classification_name = %s", (classification,))
             classification_id = db.cursor.fetchone()
             if not classification_id:
-                db.cursor.execute("INSERT INTO classifications(classification_name) VALUES (%s)", (classification,))
+                classification_guid = make_guid()
+                db.cursor.execute("INSERT INTO classifications(guid, classification_name) VALUES (%s,%s)", (classification_guid, classification,))
                 classification_id = db.cursor.fetchone()['id']
 
             # Update the prompt's classification
@@ -326,40 +361,68 @@ class MySQLPromptRepository(PromptRepositoryInterface):
             else:
                 raise DataValidationError(message=f"Error occurred while add_remove_classifications_for_prompt: {e}")
 
-    def search_prompts(self, query: str) -> List[Prompt]:
+    def search_prompts(self, query: str, user: Optional[User] = None) -> List[Prompt]:
         db = get_current_db_context()
 
         # Fetch matching prompt guids based on the query (I assume a simple LIKE clause for now)
-        db.cursor.execute("SELECT guid FROM prompts WHERE content LIKE %s", (f"%{query}%",))
+        # Adjust the query based on the presence of the user parameter
+        if user:
+            db.cursor.execute("""
+                    SELECT guid FROM prompts 
+                    WHERE content LIKE %s AND author_id = %s
+                """, (f"%{query}%", user.id))
+        else:
+            db.cursor.execute("""
+                    SELECT guid FROM prompts 
+                    WHERE content LIKE %s AND author_id IS NULL
+                """, (f"%{query}%",))
+
         prompt_guids = [row['guid'] for row in db.cursor.fetchall()]
 
         # Map guids to their full details
         return [self.get_prompt(guid) for guid in prompt_guids]
 
-    def get_prompts_by_tag(self, tag: str) -> List[Prompt]:
+    def get_prompts_by_tag(self, tag: str, user: Optional[User] = None) -> List[Prompt]:
         db = get_current_db_context()
 
         # Fetch prompt guids that have the given tag
-        db.cursor.execute("""
-               SELECT prompts.guid FROM prompts 
-               JOIN prompt_tags ON prompts.id = prompt_tags.prompt_id 
-               JOIN tags ON prompt_tags.tag_id = tags.id 
-               WHERE tags.tag_name = %s
-           """, (tag,))
+        # Adjust the query based on the presence of the user parameter
+        if user:
+            db.cursor.execute("""
+                    SELECT prompts.guid FROM prompts 
+                    JOIN prompt_tags ON prompts.id = prompt_tags.prompt_id 
+                    JOIN tags ON prompt_tags.tag_id = tags.id 
+                    WHERE tags.tag_name = %s AND prompts.author_id = %s
+                """, (tag, user.id))
+        else:
+            db.cursor.execute("""
+                    SELECT prompts.guid FROM prompts 
+                    JOIN prompt_tags ON prompts.id = prompt_tags.prompt_id 
+                    JOIN tags ON prompt_tags.tag_id = tags.id 
+                    WHERE tags.tag_name = %s AND prompts.author_id IS NULL
+                """, (tag,))
         prompt_guids = [row['guid'] for row in db.cursor.fetchall()]
 
         # Map guids to their full details
         return [self.get_prompt(guid) for guid in prompt_guids]
 
-    def get_prompts_by_classification(self, classification: str) -> List[Prompt]:
+    def get_prompts_by_classification(self, classification: str, user: Optional[User] = None) -> List[Prompt]:
         db = get_current_db_context()
 
         # Fetch prompt guids that have the given classification
-        db.cursor.execute("""
-               SELECT prompts.guid FROM prompts 
-               JOIN classifications ON prompts.classification_id = classifications.id 
-               WHERE classifications.classification_name = %s
-           """, (classification,))
+        # Adjust the query based on the presence of the user parameter
+        if user:
+            db.cursor.execute("""
+                    SELECT prompts.guid FROM prompts 
+                    JOIN classifications ON prompts.classification_id = classifications.id 
+                    WHERE classifications.classification_name = %s AND prompts.author_id = %s
+                """, (classification, user.id))
+        else:
+            db.cursor.execute("""
+                    SELECT prompts.guid FROM prompts 
+                    JOIN classifications ON prompts.classification_id = classifications.id 
+                    WHERE classifications.classification_name = %s AND prompts.author_id IS NULL
+                """, (classification,))
         prompt_guids = [row['guid'] for row in db.cursor.fetchall()]
 
         # Map guids to their full details

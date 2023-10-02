@@ -1,6 +1,8 @@
+import uuid
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
 
+from core import make_guid
 from core.exceptions import (
     PromptException,
     RecordNotFoundError,
@@ -50,12 +52,13 @@ class PromptService(PromptServiceInterface):
         self.repo = repository
         self.variables_service = VariablesService()
 
-    async def create_prompt(self, prompt: Prompt, user: User = None) -> str:
+    async def create_prompt(self, prompt: Prompt, author: Optional[User] = None) -> str:
         """
         Create a new prompt in the database.
 
         Args:
             prompt (Prompt): The prompt details.
+            author (User): The user creating the prompt.
 
         Returns:
             str: The GUID of the created prompt.
@@ -64,10 +67,11 @@ class PromptService(PromptServiceInterface):
             PromptException: If any other exception is encountered.
             DataValidationError: If the provided prompt is invalid or if there's a validation error in the DB layer.
             ConstraintViolationError: If a database constraint is violated.
-            :param user:
+            :param author:
         """
         try:
             self.variables_service.derive_variables(prompt)
+            prompt.guid = make_guid()
             with DatabaseContext() as db:
                 db.begin_transaction()
                 guid = self.repo.create_prompt(prompt)
@@ -239,3 +243,4 @@ class PromptService(PromptServiceInterface):
         """
         with DatabaseContext():
             return self.repo.get_prompts_by_classification(classification)
+
