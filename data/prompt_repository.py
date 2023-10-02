@@ -28,6 +28,15 @@ class PromptRepositoryInterface:
     def add_remove_classification_for_prompt(self, guid: str, classification: str) -> None:
         raise NotImplementedError
 
+    def search_prompts(self, query: str) -> List[Prompt]:
+        raise NotImplementedError
+
+    def get_prompts_by_tag(self, tag: str) -> List[Prompt]:
+        raise NotImplementedError
+
+    def get_prompts_by_classification(self, classification: str) -> List[Prompt]:
+        raise NotImplementedError
+
 
 class MySQLPromptRepository(PromptRepositoryInterface):
 
@@ -316,3 +325,42 @@ class MySQLPromptRepository(PromptRepositoryInterface):
                     message=f"Error occurred while add_remove_classifications_for_prompt: {e}")
             else:
                 raise DataValidationError(message=f"Error occurred while add_remove_classifications_for_prompt: {e}")
+
+    def search_prompts(self, query: str) -> List[Prompt]:
+        db = get_current_db_context()
+
+        # Fetch matching prompt guids based on the query (I assume a simple LIKE clause for now)
+        db.cursor.execute("SELECT guid FROM prompts WHERE content LIKE %s", (f"%{query}%",))
+        prompt_guids = [row['guid'] for row in db.cursor.fetchall()]
+
+        # Map guids to their full details
+        return [self.get_prompt(guid) for guid in prompt_guids]
+
+    def get_prompts_by_tag(self, tag: str) -> List[Prompt]:
+        db = get_current_db_context()
+
+        # Fetch prompt guids that have the given tag
+        db.cursor.execute("""
+               SELECT prompts.guid FROM prompts 
+               JOIN prompt_tags ON prompts.id = prompt_tags.prompt_id 
+               JOIN tags ON prompt_tags.tag_id = tags.id 
+               WHERE tags.tag_name = %s
+           """, (tag,))
+        prompt_guids = [row['guid'] for row in db.cursor.fetchall()]
+
+        # Map guids to their full details
+        return [self.get_prompt(guid) for guid in prompt_guids]
+
+    def get_prompts_by_classification(self, classification: str) -> List[Prompt]:
+        db = get_current_db_context()
+
+        # Fetch prompt guids that have the given classification
+        db.cursor.execute("""
+               SELECT prompts.guid FROM prompts 
+               JOIN classifications ON prompts.classification_id = classifications.id 
+               WHERE classifications.classification_name = %s
+           """, (classification,))
+        prompt_guids = [row['guid'] for row in db.cursor.fetchall()]
+
+        # Map guids to their full details
+        return [self.get_prompt(guid) for guid in prompt_guids]
