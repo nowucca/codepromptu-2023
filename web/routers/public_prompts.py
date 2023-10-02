@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.exceptions import RecordNotFoundError
-from core.models import Prompt, User
+from core.models import Prompt, User, PromptCreate
 from service.prompt_service import PromptServiceInterface
 from typing import List
 
@@ -11,7 +11,7 @@ router = APIRouter()
 
 
 @router.post("/prompt/", status_code=201, summary="Add a New Prompt (requires admin user)")
-async def add_prompt(prompt: Prompt,
+async def add_prompt(prompt: PromptCreate,
                      service: PromptServiceInterface = Depends(get_prompt_service),
                      user: User = Depends(require_admin_user)):
     return await service.create_prompt(prompt, user)

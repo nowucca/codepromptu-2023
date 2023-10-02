@@ -1,7 +1,8 @@
 from typing import List
 import re
 import mimetypes
-from core.models import Variable, Prompt
+from core.models import Variable, Prompt, PromptCreate
+
 
 class VariablesService:
     @staticmethod
@@ -10,7 +11,7 @@ class VariablesService:
         return bool(mimetypes.guess_extension(mime_type))
 
     @staticmethod
-    def derive_variables(prompt: Prompt):
+    def derive_variables(prompt: PromptCreate) -> None:
         # Calculate IO variables based on the updated prompt content
         io_variables = VariablesService.parse_io_variables(prompt.content)
 

@@ -1,0 +1,46 @@
+### Test Login
+GET {{base_url}}/private/login
+Authorization: Basic {{basic_credential}}
+###
+
+### Test Add New Private Prompt
+POST {{base_url}}/private/prompt/
+Authorization: Basic {{basic_credential}}
+Content-Type: application/json
+
+{
+  "guid": "private-guid-456",
+  "content": "Private Prompt Content"
+}
+###
+
+### Test List All Private Prompts
+GET {{base_url}}/private/prompt/?skip=0&limit=10
+Authorization: Basic {{basic_credential}}
+###
+
+### Test Delete a Private Prompt by GUID
+DELETE {{base_url}}/private/prompt/private-guid-456
+Authorization: Basic {{basic_credential}}
+###
+
+### Test Update a Private Prompt by GUID
+PUT {{base_url}}/private/prompt/private-guid-456
+Authorization: Basic {{basic_credential}}
+Content-Type: application/json
+
+{
+  "content": "Updated Private Prompt Content"
+}
+###
+
+### Test List Private Prompts by Tag
+GET {{base_url}}/private/prompt/tags/tag1
+Authorization: Basic {{basic_credential}}
+###
+
+### Test List Private Prompts by Classification
+GET {{base_url}}/private/prompt/classification/private-classification
+Authorization: Basic {{basic_credential}}
+###
+

@@ -8,7 +8,7 @@ from core.exceptions import (
     RecordNotFoundError,
     ConstraintViolationError
 )
-from core.models import Prompt, User
+from core.models import Prompt, User, PromptCreate
 from data import DatabaseContext
 from data.prompt_repository import PromptRepositoryInterface
 from .variables_service import VariablesService
@@ -16,7 +16,7 @@ from .variables_service import VariablesService
 
 class PromptServiceInterface:
 
-    async def create_prompt(self, prompt: Prompt, author: Optional[User] = None) -> str:
+    async def create_prompt(self, prompt: PromptCreate, author: Optional[User] = None) -> str:
         pass
 
     async def update_prompt(self, prompt: Prompt, user: Optional[User] = None) -> None:
@@ -52,7 +52,7 @@ class PromptService(PromptServiceInterface):
         self.repo = repository
         self.variables_service = VariablesService()
 
-    async def create_prompt(self, prompt: Prompt, author: Optional[User] = None) -> str:
+    async def create_prompt(self, prompt: PromptCreate, author: Optional[User] = None) -> str:
         """
         Create a new prompt in the database.
 
@@ -67,11 +67,11 @@ class PromptService(PromptServiceInterface):
             PromptException: If any other exception is encountered.
             DataValidationError: If the provided prompt is invalid or if there's a validation error in the DB layer.
             ConstraintViolationError: If a database constraint is violated.
+            :param prompt:
             :param author:
         """
         try:
             self.variables_service.derive_variables(prompt)
-            prompt.guid = make_guid()
             with DatabaseContext() as db:
                 db.begin_transaction()
                 guid = self.repo.create_prompt(prompt, author)

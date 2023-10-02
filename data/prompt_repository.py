@@ -3,12 +3,12 @@ from typing import List, Optional
 
 from core import make_guid
 from core.exceptions import ConstraintViolationError, DataValidationError, UnauthorizedError
-from core.models import Prompt, Variable, User
+from core.models import Prompt, Variable, User, PromptCreate
 from data import get_current_db_context
 
 
 class PromptRepositoryInterface:
-    def create_prompt(self, prompt: Prompt, author: Optional[User] = None) -> str:
+    def create_prompt(self, prompt: PromptCreate, author: Optional[User] = None) -> str:
         raise NotImplementedError
 
     def update_prompt(self, prompt: Prompt, user: Optional[User] = None) -> None:
@@ -41,12 +41,13 @@ class PromptRepositoryInterface:
 
 class MySQLPromptRepository(PromptRepositoryInterface):
 
-    def create_prompt(self, prompt: Prompt, author: Optional[User] = None) -> str:
+    def create_prompt(self, prompt: PromptCreate, author: Optional[User] = None) -> str:
         db = get_current_db_context()
         try:
+            prompt_guid = make_guid()
             # Insert main prompt data
             db.cursor.execute("INSERT INTO prompts (guid, content, author_id, created_at, updated_at ) VALUES (%s, %s, %s, %s, %s)",
-                              (prompt.guid, prompt.content, author.id if author else None,  prompt.created_at, prompt.updated_at))
+                              (prompt_guid, prompt.content, author.id if author else None,  prompt.created_at, prompt.updated_at))
             prompt_id = db.cursor.lastrowid
             prompt.internal_id = prompt_id
 
@@ -64,7 +65,7 @@ class MySQLPromptRepository(PromptRepositoryInterface):
 
             self._store_tags_classification(prompt, prompt_id)
 
-            return prompt.guid
+            return prompt_guid
         except Exception as e:
             traceback.print_exc()
             if 'constraint' in str(e).lower():
@@ -75,19 +76,21 @@ class MySQLPromptRepository(PromptRepositoryInterface):
     def _store_tags_classification(self, prompt, prompt_id):
         db = get_current_db_context()
         # Handle tags
-        for tag in prompt.tags:
-            db.cursor.execute("INSERT IGNORE INTO tags (tag_name) VALUES (%s)", (tag,))
-            db.cursor.execute("SELECT id FROM tags WHERE tag_name = %s", (tag,))
-            tag_id = db.cursor.fetchone()['id']
-            db.cursor.execute("INSERT INTO prompt_tags (prompt_id, tag_id) VALUES (%s, %s)",
-                              (prompt_id, tag_id))
+        if prompt.tags:
+            for tag in prompt.tags:
+                db.cursor.execute("INSERT IGNORE INTO tags (tag_name) VALUES (%s)", (tag,))
+                db.cursor.execute("SELECT id FROM tags WHERE tag_name = %s", (tag,))
+                tag_id = db.cursor.fetchone()['id']
+                db.cursor.execute("INSERT INTO prompt_tags (prompt_id, tag_id) VALUES (%s, %s)",
+                                  (prompt_id, tag_id))
         # Handle classification
-        db.cursor.execute("INSERT IGNORE INTO classifications (classification_name) VALUES (%s)",
-                          (prompt.classification,))
-        db.cursor.execute("SELECT id FROM classifications WHERE classification_name = %s", (prompt.classification,))
-        classification_id = db.cursor.fetchone()['id']
-        db.cursor.execute("UPDATE prompts SET classification_id = %s WHERE id = %s",
-                          (classification_id, prompt_id))
+        if prompt.classification:
+            db.cursor.execute("INSERT IGNORE INTO classifications (classification_name) VALUES (%s)",
+                              (prompt.classification,))
+            db.cursor.execute("SELECT id FROM classifications WHERE classification_name = %s", (prompt.classification,))
+            classification_id = db.cursor.fetchone()['id']
+            db.cursor.execute("UPDATE prompts SET classification_id = %s WHERE id = %s",
+                              (classification_id, prompt_id))
 
     def get_prompt(self, guid: str, user: Optional[User] = None) -> Optional[Prompt]:
         db = get_current_db_context()

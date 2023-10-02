@@ -1,0 +1,44 @@
+### Test Add New Public Prompt
+POST http://{{base_url}}/public/prompt/
+Authorization: Basic {{basic_credential}}
+Content-Type: application/json
+
+{
+  "content": "Sample Prompt Content"
+}
+
+###
+
+### Test List All Public Prompts
+GET {{base_url}}/public/prompt/?skip=0&limit=10
+###
+
+### Test Delete a Public Prompt by GUID
+DELETE {{base_url}}/public/prompt/sample-guid-123
+Authorization: Basic {{basic_credential}}
+###
+
+### Test Update a Public Prompt by GUID
+PUT {{base_url}}/public/prompt/sample-guid-123
+Authorization: Basic {{basic_credential}}
+Content-Type: application/json
+
+{
+  "content": "Updated Prompt Content"
+}
+###
+
+### Test Retrieve a Public Prompt by GUID
+GET {{base_url}}/public/prompt/sample-guid-123
+###
+
+### Test Search Public Prompts
+GET {{base_url}}/public/prompt/search/?query=sample
+###
+
+### Test List Public Prompts by Tag
+GET {{base_url}}/public/prompt/tags/tag1
+###
+
+
+
