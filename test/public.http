@@ -29,11 +29,11 @@ Content-Type: application/json
 ###
 
 ### Test Retrieve a Public Prompt by GUID
-GET {{base_url}}/public/prompt/sample-guid-123
+GET {{base_url}}/public/prompt/bbad9b56d7ba4f0fb91d1b90d431df13
 ###
 
 ### Test Search Public Prompts
-GET {{base_url}}/public/prompt/search/?query=sample
+GET {{base_url}}/public/prompt/search/?query=Updated
 ###
 
 ### Test List Public Prompts by Tag

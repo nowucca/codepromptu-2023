@@ -132,7 +132,11 @@ class MySQLPromptRepository(PromptRepositoryInterface):
             # Fetch classification
             db.cursor.execute("SELECT classification_name FROM classifications WHERE id = %s",
                               (prompt_row['classification_id'],))
-            classification = db.cursor.fetchone()['classification_name']
+            result = db.cursor.fetchone()
+            if result is None or result['classification_name'] is None:
+                classification = None
+            else:
+                classification = result['classification_name']
 
             # Construct and return the Prompt model
             return Prompt(
@@ -144,7 +148,6 @@ class MySQLPromptRepository(PromptRepositoryInterface):
                 tags=tags,
                 classification=classification,
                 author=prompt_row['author_id'],  # assuming author_id maps to an author name or similar
-                readonly=prompt_row['readonly'],
                 created_at=prompt_row['created_at'],
                 updated_at=prompt_row['updated_at'] if 'updated_at' in prompt_row else None,
 
