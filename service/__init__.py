@@ -2,7 +2,7 @@ import logging
 import threading
 from datetime import datetime
 
-logging_format = ("%(asctime)s,%(msecs)d {LoggingLevel}  %(request-id)s [%(thread)d] [%(filename)s:%(lineno)d] %("
+logging_format = ("%(asctime)s,%(msecs)d {LoggingLevel}  tc=%(request_id)s [%(thread)d] [%(filename)s:%(lineno)d] %("
                   "message)s")
 
 logging.basicConfig(level=logging.DEBUG, format=logging_format)
