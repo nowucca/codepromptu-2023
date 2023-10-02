@@ -215,3 +215,20 @@ class PromptService(PromptServiceInterface):
             db.rollback_transaction()
             raise PromptException("An error occurred while updating classification for the prompt.") from e
 
+    def search_prompts(self, query: str) -> List[Prompt]:
+        """
+        Search for prompts based on a given query.
+        """
+        return self.repo.search_prompts(query)
+
+    def get_prompts_by_tag(self, tag: str) -> List[Prompt]:
+        """
+        Retrieve all prompts associated with a specific tag.
+        """
+        return self.repo.get_prompts_by_tag(tag)
+
+    def get_prompts_by_classification(self, classification: str) -> List[Prompt]:
+        """
+        Retrieve all prompts associated with a specific classification.
+        """
+        return self.repo.get_prompts_by_classification(classification)
