@@ -14,20 +14,19 @@ router = APIRouter()
 async def add_prompt(prompt: PromptCreate,
                      service: PromptServiceInterface = Depends(get_prompt_service),
                      user: User = Depends(require_admin_user)):
-    return await service.create_prompt(prompt, user)
+    return service.create_prompt(prompt)
 
 @router.delete("/prompt/{guid}", status_code=204, summary="Delete a Public Prompt by GUID (requires admin user)")
-async def delete_prompt(guid: str,
+def delete_prompt(guid: str,
                         service: PromptServiceInterface = Depends(get_prompt_service),
                         user: User = Depends(require_admin_user)):
-    await service.delete_prompt(guid)
+    service.delete_prompt(guid)
     return {}  # Return an empty response for 204 status
 
 @router.put("/prompt/{guid}", summary="Update a Public Prompt by GUID (requires admin user) ")
-async def update_prompt(guid: str, prompt: Prompt, service: PromptServiceInterface = Depends(get_prompt_service),
+def update_prompt(guid: str, prompt: Prompt, service: PromptServiceInterface = Depends(get_prompt_service),
                         user: User = Depends(require_admin_user)):
-    assert guid == prompt.guid
-    return await service.update_prompt(prompt)
+    return service.update_prompt(prompt)
 
 @router.get("/prompt/{guid}", response_model=Prompt, summary="Retrieve a Public Prompt by GUID")
 def get_prompt(guid: str, service: PromptServiceInterface = Depends(get_prompt_service)):

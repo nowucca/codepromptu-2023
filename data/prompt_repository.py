@@ -46,10 +46,9 @@ class MySQLPromptRepository(PromptRepositoryInterface):
         try:
             prompt_guid = make_guid()
             # Insert main prompt data
-            db.cursor.execute("INSERT INTO prompts (guid, content, author_id, created_at, updated_at ) VALUES (%s, %s, %s, %s, %s)",
-                              (prompt_guid, prompt.content, author.id if author else None,  prompt.created_at, prompt.updated_at))
+            db.cursor.execute("INSERT INTO prompts (guid, content, author_id ) VALUES (%s, %s, %s)",
+                              (prompt_guid, prompt.content, author.id if author else None,))
             prompt_id = db.cursor.lastrowid
-            prompt.internal_id = prompt_id
 
             # Handle I/O variables
             for var in prompt.input_variables + prompt.output_variables:
@@ -138,7 +137,7 @@ class MySQLPromptRepository(PromptRepositoryInterface):
             # Construct and return the Prompt model
             return Prompt(
                 guid=prompt_row['guid'],
-                internal_id=prompt_row['id'],
+                id=prompt_row['id'],
                 content=prompt_row['content'],
                 input_variables=input_vars,
                 output_variables=output_vars,
@@ -267,17 +266,22 @@ class MySQLPromptRepository(PromptRepositoryInterface):
                 # Fetch classification
                 db.cursor.execute("SELECT classification_name FROM classifications WHERE id = %s",
                                   (prompt_data['classification_id'],))
-                classification = db.cursor.fetchone()['classification_name']
+                result = db.cursor.fetchone()
+
+                if result is None or result['classification_name'] is None:
+                    classification = None
+                else:
+                    classification = result['classification_name']
 
                 # Construct and append the Prompt object to the list
                 prompts.append(Prompt(guid=prompt_data['guid'],
-                                      internal_id=prompt_data['id'],
+                                      id=prompt_data['id'],
                                       content=prompt_data['content'],
                                       input_variables=input_vars,
                                       output_variables=output_vars,
                                       tags=tags,
                                       classification=classification,
-                                      author=prompt_data['author'],
+                                      author=prompt_data['author_id'],
                                       created_at=prompt_data['created_at'],
                                       updated_at=prompt_data['updated_at']))
 

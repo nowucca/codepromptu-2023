@@ -14,7 +14,7 @@ GET {{base_url}}/public/prompt/?skip=0&limit=10
 ###
 
 ### Test Delete a Public Prompt by GUID
-DELETE {{base_url}}/public/prompt/sample-guid-123
+DELETE {{base_url}}/public/prompt/cc06a06bc3734c5b818e859c17e8ace8
 Authorization: Basic {{basic_credential}}
 ###
 
