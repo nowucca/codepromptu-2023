@@ -14,17 +14,22 @@ Authorization: Basic {{basic_credential}}
 ###
 
 ### Test Delete a Private Prompt by GUID
-DELETE {{base_url}}/private/prompt/private-guid-456
+DELETE {{base_url}}/private/prompt/81df98140c0a42eba39bc39148674c56
 Authorization: Basic {{basic_credential}}
 ###
 
 ### Test Update a Private Prompt by GUID
-PUT {{base_url}}/private/prompt/private-guid-456
+PUT {{base_url}}/private/prompt/cc89ba398bc4488a8ad3f81737f936aa
 Authorization: Basic {{basic_credential}}
 Content-Type: application/json
 
 {
-  "content": "Updated Private Prompt Content"
+  "content": "Updated Private Prompt Content 2",
+  "classification": "private-classification",
+  "tags": [
+    "tag1",
+    "tag2"
+  ]
 }
 ###
 

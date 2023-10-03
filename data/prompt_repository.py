@@ -77,14 +77,14 @@ class MySQLPromptRepository(PromptRepositoryInterface):
         # Handle tags
         if prompt.tags:
             for tag in prompt.tags:
-                db.cursor.execute("INSERT IGNORE INTO tags (tag_name) VALUES (%s)", (tag,))
+                db.cursor.execute(
+                    "INSERT INTO tags (tag_name) VALUES (%s) AS new ON DUPLICATE KEY UPDATE tag_name=new.tag_name",
+                    (tag,))
                 db.cursor.execute("SELECT id FROM tags WHERE tag_name = %s", (tag,))
                 tag_id = db.cursor.fetchone()['id']
-                db.cursor.execute("INSERT INTO prompt_tags (prompt_id, tag_id) VALUES (%s, %s)",
-                                  (prompt_id, tag_id))
-        # Handle classification
+                db.cursor.execute("INSERT INTO prompt_tags (prompt_id, tag_id) VALUES (%s, %s)", (prompt_id, tag_id))
         if prompt.classification:
-            db.cursor.execute("INSERT IGNORE INTO classifications (classification_name) VALUES (%s)",
+            db.cursor.execute("INSERT INTO classifications (classification_name) VALUES (%s) AS new ON DUPLICATE KEY UPDATE classification_name=new.classification_name",
                               (prompt.classification,))
             db.cursor.execute("SELECT id FROM classifications WHERE classification_name = %s", (prompt.classification,))
             classification_id = db.cursor.fetchone()['id']
@@ -112,22 +112,23 @@ class MySQLPromptRepository(PromptRepositoryInterface):
             db.cursor.execute("SELECT * FROM prompt_io_variables WHERE prompt_id = %s", (prompt_row['id'],))
             io_variable_ids = [row['io_variable_id'] for row in db.cursor.fetchall()]
             # Using IN with a list of ids
-            placeholders = ', '.join(['%s'] * len(io_variable_ids))
-            query = f"SELECT * FROM io_variables WHERE id IN ({placeholders})"
-            db.cursor.execute(query, io_variable_ids)
-
             input_vars = []
             output_vars = []
-            for row in db.cursor.fetchall():
-                var = Variable(name=row['name'],
-                               description=row['description'],
-                               type=row['type'],
-                               expected_format=row['expected_format'])
-                # Assuming you have a field to distinguish between input and output variables
-                if row['type'] == 'input':
-                    input_vars.append(var)
-                else:
-                    output_vars.append(var)
+            if len(io_variable_ids) > 0:
+                placeholders = ', '.join(['%s'] * len(io_variable_ids))
+                query = f"SELECT * FROM io_variables WHERE id IN ({placeholders})"
+                db.cursor.execute(query, io_variable_ids)
+
+                for row in db.cursor.fetchall():
+                    var = Variable(name=row['name'],
+                                   description=row['description'],
+                                   type=row['type'],
+                                   expected_format=row['expected_format'])
+                    # Assuming you have a field to distinguish between input and output variables
+                    if row['type'] == 'input':
+                        input_vars.append(var)
+                    else:
+                        output_vars.append(var)
 
             # Fetch associated tags
             db.cursor.execute(
@@ -396,7 +397,7 @@ class MySQLPromptRepository(PromptRepositoryInterface):
         prompt_guids = [row['guid'] for row in db.cursor.fetchall()]
 
         # Map guids to their full details
-        return [self.get_prompt(guid) for guid in prompt_guids]
+        return [self.get_prompt(guid, user) for guid in prompt_guids]
 
     def get_prompts_by_tag(self, tag: str, user: Optional[User] = None) -> List[Prompt]:
         db = get_current_db_context()
@@ -420,7 +421,7 @@ class MySQLPromptRepository(PromptRepositoryInterface):
         prompt_guids = [row['guid'] for row in db.cursor.fetchall()]
 
         # Map guids to their full details
-        return [self.get_prompt(guid) for guid in prompt_guids]
+        return [self.get_prompt(guid, user) for guid in prompt_guids]
 
     def get_prompts_by_classification(self, classification: str, user: Optional[User] = None) -> List[Prompt]:
         db = get_current_db_context()
@@ -442,4 +443,4 @@ class MySQLPromptRepository(PromptRepositoryInterface):
         prompt_guids = [row['guid'] for row in db.cursor.fetchall()]
 
         # Map guids to their full details
-        return [self.get_prompt(guid) for guid in prompt_guids]
+        return [self.get_prompt(guid, user) for guid in prompt_guids]

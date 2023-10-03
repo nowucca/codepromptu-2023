@@ -43,3 +43,4 @@ def require_current_user(credentials: HTTPBasicCredentials = Depends(security),
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     return user
+
