@@ -1,3 +1,4 @@
+import traceback
 import uuid
 from abc import ABC, abstractmethod
 from typing import List, Optional
@@ -78,6 +79,7 @@ class PromptService(PromptServiceInterface):
                 db.commit_transaction()
                 return guid
             except PromptException as known_exc:
+                traceback.print_exc()
                 db.rollback_transaction()
                 raise known_exc
             except Exception as e:
@@ -173,7 +175,7 @@ class PromptService(PromptServiceInterface):
             except Exception as e:
                 raise PromptException("An unexpected error occurred while listing prompts.") from e
 
-    async def update_tags_for_prompt(self, guid: str, tags: List[str], user: Optional[User] = None) -> None:
+    def update_tags_for_prompt(self, guid: str, tags: List[str], user: Optional[User] = None) -> None:
         """
         Add or remove tags for a given prompt in the database.
 
@@ -199,7 +201,7 @@ class PromptService(PromptServiceInterface):
                 db.rollback_transaction()
                 raise PromptException("An error occurred while updating tags for the prompt.") from e
 
-    async def update_classification_for_prompt(self, guid: str, classification: str, user: Optional[User] = None) -> None:
+    def update_classification_for_prompt(self, guid: str, classification: str, user: Optional[User] = None) -> None:
         """
         Add or remove classifications for a given prompt in the database.
 

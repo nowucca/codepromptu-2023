@@ -37,9 +37,9 @@ class VariablesService:
         output_variables = []
 
         for variable in io_variables:
-            if variable.variable_type == "input":
+            if variable.type == "input":
                 input_variables.append(variable)
-            elif variable.variable_type == "output":
+            elif variable.type == "output":
                 output_variables.append(variable)
 
         return input_variables, output_variables

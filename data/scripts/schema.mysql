@@ -32,19 +32,15 @@ CREATE TABLE io_variables (
 -- tags Table
 CREATE TABLE tags (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    guid VARCHAR(255) NOT NULL,
     tag_name VARCHAR(255) NOT NULL,
-    UNIQUE INDEX tags_U1 (guid),
-    UNIQUE INDEX tags_U2 (tag_name)
+    UNIQUE INDEX tags_U1 (tag_name)
 );
 
 -- classifications Table
 CREATE TABLE classifications (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    guid VARCHAR(255) NOT NULL,
     classification_name VARCHAR(255) NOT NULL,
-    UNIQUE INDEX classifications_U1 (guid),
-    UNIQUE INDEX classifications_U2 (classification_name)
+    UNIQUE INDEX classifications_U1 (classification_name)
 );
 
 -- prompts Table

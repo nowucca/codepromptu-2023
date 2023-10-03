@@ -4,7 +4,7 @@ Authorization: Basic {{basic_credential}}
 Content-Type: application/json
 
 {
-  "content": "Sample Prompt Content"
+  "content": "Sample Prompt Content {input_var} {output_var!}"
 }
 
 ###
@@ -14,22 +14,24 @@ GET {{base_url}}/public/prompt/?skip=0&limit=10
 ###
 
 ### Test Delete a Public Prompt by GUID
-DELETE {{base_url}}/public/prompt/cc06a06bc3734c5b818e859c17e8ace8
+DELETE {{base_url}}/public/prompt/5982cb445c774568bc254a90b3a7c5f7
 Authorization: Basic {{basic_credential}}
 ###
 
 ### Test Update a Public Prompt by GUID
-PUT {{base_url}}/public/prompt/bbad9b56d7ba4f0fb91d1b90d431df13
+PUT {{base_url}}/public/prompt/823e8dc5c30e4ab48005badff96418cc
 Authorization: Basic {{basic_credential}}
 Content-Type: application/json
 
 {
-  "content": "Updated Prompt Content"
+  "content": "Updated Prompt Content",
+  "tags": ["tag1", "tag2"],
+  "classification": "classification1"
 }
 ###
 
 ### Test Retrieve a Public Prompt by GUID
-GET {{base_url}}/public/prompt/bbad9b56d7ba4f0fb91d1b90d431df13
+GET {{base_url}}/public/prompt/7cb043e4e1b5477a9245ee55f697a10f
 ###
 
 ### Test Search Public Prompts
@@ -40,5 +42,7 @@ GET {{base_url}}/public/prompt/search/?query=Updated
 GET {{base_url}}/public/prompt/tags/tag1
 ###
 
-
+### Test List Public Prompts by Classification
+GET {{base_url}}/public/prompt/classification                                                                                                                         /classification1
+###
 

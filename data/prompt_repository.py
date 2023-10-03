@@ -111,12 +111,18 @@ class MySQLPromptRepository(PromptRepositoryInterface):
             # Fetch associated I/O variables
             db.cursor.execute("SELECT * FROM prompt_io_variables WHERE prompt_id = %s", (prompt_row['id'],))
             io_variable_ids = [row['io_variable_id'] for row in db.cursor.fetchall()]
-            db.cursor.execute("SELECT * FROM io_variables WHERE id IN (%s)", (",".join(map(str, io_variable_ids)),))
+            # Using IN with a list of ids
+            placeholders = ', '.join(['%s'] * len(io_variable_ids))
+            query = f"SELECT * FROM io_variables WHERE id IN ({placeholders})"
+            db.cursor.execute(query, io_variable_ids)
 
             input_vars = []
             output_vars = []
             for row in db.cursor.fetchall():
-                var = Variable(name=row['name'], description=row['description'], expected_format=row['expected_format'])
+                var = Variable(name=row['name'],
+                               description=row['description'],
+                               type=row['type'],
+                               expected_format=row['expected_format'])
                 # Assuming you have a field to distinguish between input and output variables
                 if row['type'] == 'input':
                     input_vars.append(var)

@@ -1,15 +1,9 @@
-### Test Login
-GET {{base_url}}/private/login
-Authorization: Basic {{basic_credential}}
-###
-
 ### Test Add New Private Prompt
 POST {{base_url}}/private/prompt/
 Authorization: Basic {{basic_credential}}
 Content-Type: application/json
 
 {
-  "guid": "private-guid-456",
   "content": "Private Prompt Content"
 }
 ###
