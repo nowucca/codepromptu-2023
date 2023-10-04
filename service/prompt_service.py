@@ -7,7 +7,7 @@ from core import make_guid
 from core.exceptions import (
     PromptException,
     RecordNotFoundError,
-    ConstraintViolationError
+    ConstraintViolationError, DataValidationError
 )
 from core.models import Prompt, User, PromptCreate, PromptUpdate
 from data import DatabaseContext
@@ -41,7 +41,7 @@ class PromptServiceInterface:
     def search_prompts(self, query: str, user: Optional[User] = None) -> List[Prompt]:
         pass
 
-    def get_prompts_by_tag(self, tag: str, user: Optional[User] = None) -> List[Prompt]:
+    def get_prompts_by_tags(self, tags: str, user: Optional[User] = None) -> List[Prompt]:
         pass
 
     def get_prompts_by_classification(self, classification: str, user: Optional[User] = None) -> List[Prompt]:
@@ -234,12 +234,17 @@ class PromptService(PromptServiceInterface):
         with DatabaseContext():
             return self.repo.search_prompts(query, user)
 
-    def get_prompts_by_tag(self, tag: str, user: Optional[User] = None) -> List[Prompt]:
+    def get_prompts_by_tags(self, tags: str, user: Optional[User] = None) -> List[Prompt]:
         """
         Retrieve all prompts associated with a specific tag.
         """
+        tags_list = tags.split(',')
+
+        if not tags_list:
+            raise DataValidationError("No tags provided.")
+
         with DatabaseContext():
-            return self.repo.get_prompts_by_tag(tag, user)
+            return self.repo.get_prompts_by_tags(tags_list, user)
 
     def get_prompts_by_classification(self, classification: str, user: Optional[User] = None) -> List[Prompt]:
         """

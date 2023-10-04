@@ -56,10 +56,12 @@ def search_prompts(query: str, service: PromptServiceInterface = Depends(get_pro
     return service.search_prompts(query)
 
 
-@router.get("/prompt/tags/{tag}", response_model=List[Prompt], summary="List Public Prompts by Tag")
-def get_prompts_by_tag(tag: str, service: PromptServiceInterface = Depends(get_prompt_service)):
-    # Assuming the service has a method to get prompts by tag.
-    return service.get_prompts_by_tag(tag)
+@router.get("/prompt/tags/",
+            response_model=List[Prompt], summary="List Public Prompts by Tag")
+def get_prompts_by_tag(
+    tags: str = Query(..., title="Tags", description="Comma-separated list of tags to search for"),
+    service: PromptServiceInterface = Depends(get_prompt_service)):
+    return service.get_prompts_by_tags(tags)
 
 
 @router.get("/prompt/classification/{classification}", response_model=List[Prompt],

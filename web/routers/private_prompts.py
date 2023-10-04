@@ -53,7 +53,7 @@ async def search_prompts(query: str, service: PromptServiceInterface = Depends(g
 @router.get("/prompt/tags/{tag}/", response_model=List[Prompt], summary="List Private Prompts by Tag")
 async def get_prompts_by_tag(tag: str, service: PromptServiceInterface = Depends(get_prompt_service),
                              user: User = Depends(require_current_user)):
-    list = service.get_prompts_by_tag(tag, user)
+    list = service.get_prompts_by_tags(tag, user)
     return list
 
 

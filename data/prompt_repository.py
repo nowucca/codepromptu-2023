@@ -32,7 +32,7 @@ class PromptRepositoryInterface:
     def search_prompts(self, query: str, user: Optional[User] = None) -> List[Prompt]:
         raise NotImplementedError
 
-    def get_prompts_by_tag(self, tag: str, user: Optional[User] = None) -> List[Prompt]:
+    def get_prompts_by_tags(self, tags_list: List[str], user: Optional[User] = None) -> List[Prompt]:
         raise NotImplementedError
 
     def get_prompts_by_classification(self, classification: str, user: Optional[User] = None) -> List[Prompt]:
@@ -74,6 +74,13 @@ class MySQLPromptRepository(PromptRepositoryInterface):
 
     def _store_tags_classification(self, prompt, prompt_id):
         db = get_current_db_context()
+
+        # Clear existing tags for the prompt
+        db.cursor.execute("DELETE FROM prompt_tags WHERE prompt_id = %s", (prompt_id,))
+
+        # Clear existing classification for the prompt
+        db.cursor.execute("UPDATE prompts SET classification_id = NULL WHERE id = %s", (prompt_id,))
+
         # Handle tags
         if prompt.tags:
             for tag in prompt.tags:
@@ -336,8 +343,7 @@ class MySQLPromptRepository(PromptRepositoryInterface):
                 db.cursor.execute("SELECT id FROM tags WHERE tag_name = %s", (tag,))
                 tag_id = db.cursor.fetchone()
                 if not tag_id:
-                    tag_guid = make_guid()
-                    db.cursor.execute("INSERT INTO tags(guid, tag_name) VALUES (%s, %s)", (tag_guid, tag,))
+                    db.cursor.execute("INSERT INTO tags(tag_name) VALUES (%s)", (tag,))
                     tag_id = db.cursor.fetchone()['id']
 
                 # Add the tag association to the prompt
@@ -364,8 +370,7 @@ class MySQLPromptRepository(PromptRepositoryInterface):
             db.cursor.execute("SELECT id FROM classifications WHERE classification_name = %s", (classification,))
             classification_id = db.cursor.fetchone()
             if not classification_id:
-                classification_guid = make_guid()
-                db.cursor.execute("INSERT INTO classifications(guid, classification_name) VALUES (%s,%s)", (classification_guid, classification,))
+                db.cursor.execute("INSERT INTO classifications(classification_name) VALUES (%s)", (classification,))
                 classification_id = db.cursor.fetchone()['id']
 
             # Update the prompt's classification
@@ -399,30 +404,32 @@ class MySQLPromptRepository(PromptRepositoryInterface):
         # Map guids to their full details
         return [self.get_prompt(guid, user) for guid in prompt_guids]
 
-    def get_prompts_by_tag(self, tag: str, user: Optional[User] = None) -> List[Prompt]:
+    def get_prompts_by_tags(self, tags_list: List[str], user: Optional[User] = None) -> List[Prompt]:
         db = get_current_db_context()
 
-        # Fetch prompt guids that have the given tag
         # Adjust the query based on the presence of the user parameter
         if user:
-            db.cursor.execute("""
-                    SELECT prompts.guid FROM prompts 
-                    JOIN prompt_tags ON prompts.id = prompt_tags.prompt_id 
-                    JOIN tags ON prompt_tags.tag_id = tags.id 
-                    WHERE tags.tag_name = %s AND prompts.author_id = %s
-                """, (tag, user.id))
+            query = """
+                SELECT prompts.guid FROM prompts 
+                JOIN prompt_tags ON prompts.id = prompt_tags.prompt_id 
+                JOIN tags ON prompt_tags.tag_id = tags.id 
+                WHERE tags.tag_name IN ({}) AND prompts.author_id = %s
+            """.format(', '.join(['%s'] * len(tags_list)))
+            params = tuple(tags_list + [user.id])
         else:
-            db.cursor.execute("""
-                    SELECT prompts.guid FROM prompts 
-                    JOIN prompt_tags ON prompts.id = prompt_tags.prompt_id 
-                    JOIN tags ON prompt_tags.tag_id = tags.id 
-                    WHERE tags.tag_name = %s AND prompts.author_id IS NULL
-                """, (tag,))
+            query = """
+                SELECT prompts.guid FROM prompts 
+                JOIN prompt_tags ON prompts.id = prompt_tags.prompt_id 
+                JOIN tags ON prompt_tags.tag_id = tags.id 
+                WHERE tags.tag_name IN ({}) AND prompts.author_id IS NULL
+            """.format(', '.join(['%s'] * len(tags_list)))
+            params = tuple(tags_list)
+
+        db.cursor.execute(query, params)
         prompt_guids = [row['guid'] for row in db.cursor.fetchall()]
 
         # Map guids to their full details
         return [self.get_prompt(guid, user) for guid in prompt_guids]
-
     def get_prompts_by_classification(self, classification: str, user: Optional[User] = None) -> List[Prompt]:
         db = get_current_db_context()
 

@@ -25,13 +25,13 @@ Content-Type: application/json
 
 {
   "content": "Updated Prompt Content",
-  "tags": ["tag1", "tag2"],
+  "tags": ["tag1", "tag3"],
   "classification": "classification1"
 }
 ###
 
 ### Test Retrieve a Public Prompt by GUID
-GET {{base_url}}/public/prompt/7cb043e4e1b5477a9245ee55f697a10f
+GET {{base_url}}/public/prompt/823e8dc5c30e4ab48005badff96418cc
 ###
 
 ### Test Search Public Prompts
@@ -39,7 +39,7 @@ GET {{base_url}}/public/prompt/search/?query=Updated
 ###
 
 ### Test List Public Prompts by Tag
-GET {{base_url}}/public/prompt/tags/tag1
+GET {{base_url}}/public/prompt/tags/?tags=tag1,tag2
 ###
 
 ### Test List Public Prompts by Classification
