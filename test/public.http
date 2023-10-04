@@ -39,7 +39,7 @@ GET {{base_url}}/public/prompt/search/?query=Updated
 ###
 
 ### Test List Public Prompts by Tag
-GET {{base_url}}/public/prompt/tags/?tags=tag1,tag2
+GET {{base_url}}/public/prompt/tags/
 ###
 
 ### Test List Public Prompts by Classification

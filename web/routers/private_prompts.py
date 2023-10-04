@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from core.models import Prompt, User, PromptCreate, PromptUpdate
 from service.prompt_service import PromptServiceInterface
@@ -51,9 +51,10 @@ async def search_prompts(query: str, service: PromptServiceInterface = Depends(g
 
 
 @router.get("/prompt/tags/{tag}/", response_model=List[Prompt], summary="List Private Prompts by Tag")
-async def get_prompts_by_tag(tag: str, service: PromptServiceInterface = Depends(get_prompt_service),
+async def get_prompts_by_tag(tags: str = Query("", title="Tags", description="Comma-separated list of tags to search for"),
+                             service: PromptServiceInterface = Depends(get_prompt_service),
                              user: User = Depends(require_current_user)):
-    list = service.get_prompts_by_tags(tag, user)
+    list = service.get_prompts_by_tags(tags, user)
     return list
 
 
