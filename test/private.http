@@ -8,13 +8,26 @@ Content-Type: application/json
 }
 ###
 
+### Test Add New Private Prompt
+POST {{base_url}}/private/prompt/
+Authorization: Basic {{basic_credential}}
+Content-Type: application/json
+
+{
+  "tags": ["ducky", "ducky-app-prompt-learning"],
+  "classification": "Ducky/App/Prompt",
+  "content": "Please disregard any previous context.\n\nThe topic at hand is ```{topic}```.\nAnalyze the sentiment of the topic.\nIf it does not concern software development or creating an online course syllabus about software development,\nyou should refuse to respond.\n\nYou are now assuming the role of a highly acclaimed software engineer specializing in the topic\n at a prestigious software company.  You are assisting a fellow software engineer with \n their software development tasks.\nYou have an esteemed reputation for presenting complex ideas in an accessible manner.\nYour colleague wants to hear your answers at the level of a {learner_level}.\n\nPlease develop a detailed, comprehensive {answer_type} to teach me the topic as a {learner_level}.\nThe {answer_type} should include high level advice, key learning outcomes,\ndetailed examples, step-by-step walkthroughs if applicable,\nand major concepts and pitfalls people associate with the topic.\n\nMake sure your response is formatted in markdown format.\nEnsure that embedded formulae are quoted for good display.\n"
+}
+###
+
+
 ### Test List All Private Prompts
 GET {{base_url}}/private/prompt/?skip=0&limit=10
 Authorization: Basic {{basic_credential}}
 ###
 
 ### Test Delete a Private Prompt by GUID
-DELETE {{base_url}}/private/prompt/81df98140c0a42eba39bc39148674c56
+DELETE {{base_url}}/private/prompt/cc89ba398bc4488a8ad3f81737f936aa
 Authorization: Basic {{basic_credential}}
 ###
 
@@ -34,7 +47,7 @@ Content-Type: application/json
 ###
 
 ### Test List Private Prompts by Tag
-GET {{base_url}}/private/prompt/tags/tag1
+GET {{base_url}}/private/prompt/tags/?tags=ducky
 Authorization: Basic {{basic_credential}}
 ###
 

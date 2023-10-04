@@ -4,7 +4,21 @@ Authorization: Basic {{basic_credential}}
 Content-Type: application/json
 
 {
-  "content": "Sample Prompt Content {input_var} {output_var!}"
+  "tags": ["ducky", "starter"],
+  "classification": "Ducky/Requirements/Prompt",
+  "content": "Forget all previous instructions and context.  \n\nYou job is to learn and understand the following text about a product.\n```{product_name} is an AI-powered coding assistant tailored for software developers and learners. \n\nIts primary function is to facilitate the learning process about various software topics. \n\n{product_name} offers a quick chat feature that serves to answer questions regarding coding issues. \n\nFurthermore, its blueprint feature acts as a knowledge repository, enabling users to \ngenerate specific pre-planned artifacts such as schemas, types, and APIs.\n```\nAcknowledge you have understood the product by giving a terse 1 sentence summary or acknowledgement. "
+}
+
+###
+
+POST http://{{base_url}}/public/prompt/
+Authorization: Basic {{basic_credential}}
+Content-Type: application/json
+
+{
+  "tags": ["codepromptu", "codepromptu-construction-create-web-layer"],
+  "classification": "Codepromptu/Construction/Prompt",
+  "content": "Lets build the web layer for the following system and service layer.\nLet's use FastAPI to do this.\n\nThe system description is as follows:\n```\n{system-description}\n```\n\nLet's make sure to cover the following use cases for our system:\n```\n{system-usecase-summary}\n```\n\nHere is the prompt service interface to use:\n```\n{service-interface}\n```\n\nHere are the core model objects to use:\n```\n{model-objects}\n```\n\nHere are the core exceptions to use:\n```\n{exceptions}\n```\n\nThe web layer is responsible for validation, central exception handling with a single exception handler, \nand logging of each request (assigning a request id, logging the start and end result of each request per above).\n\nLet's create a FastAPI application with a router for public prompts and a router for private prompts.\nThe public router should support read-only access to prompts before login.\nThe private router should support read-write access to prompts after login.\n\nLet's use HTTP basic authentication for the private router, and implement a service layer repository and database level repository for user validation.\nLet's write a global dependency so all endpoints are logged using the required format.\n\nLet's generatea  file at a time and pause to think upfront about how things will all fit together.\n"
 }
 
 ###
@@ -14,24 +28,22 @@ GET {{base_url}}/public/prompt/?skip=0&limit=10
 ###
 
 ### Test Delete a Public Prompt by GUID
-DELETE {{base_url}}/public/prompt/5982cb445c774568bc254a90b3a7c5f7
+DELETE {{base_url}}/public/prompt/d57282dae1854504af9ebfb23b087878
 Authorization: Basic {{basic_credential}}
 ###
 
 ### Test Update a Public Prompt by GUID
-PUT {{base_url}}/public/prompt/823e8dc5c30e4ab48005badff96418cc
+PUT {{base_url}}/public/prompt/ec475a6ee9e2461bb6f4fb1ee402f52e
 Authorization: Basic {{basic_credential}}
 Content-Type: application/json
 
 {
-  "content": "Updated Prompt Content",
-  "tags": ["tag1", "tag3"],
-  "classification": "classification1"
+  "tags": ["ducky", "ducky-requirements-starter"]
 }
 ###
 
 ### Test Retrieve a Public Prompt by GUID
-GET {{base_url}}/public/prompt/823e8dc5c30e4ab48005badff96418cc
+GET {{base_url}}/public/prompt/ec475a6ee9e2461bb6f4fb1ee402f52e
 ###
 
 ### Test Search Public Prompts
@@ -39,7 +51,7 @@ GET {{base_url}}/public/prompt/search/?query=Updated
 ###
 
 ### Test List Public Prompts by Tag
-GET {{base_url}}/public/prompt/tags/
+GET {{base_url}}/public/prompt/tags/?tags=ducky
 ###
 
 ### Test List Public Prompts by Classification
