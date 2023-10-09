@@ -1,7 +1,8 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 
+from core.exceptions import RecordNotFoundError
 from core.models import Prompt, User, PromptCreate, PromptUpdate
 from service.prompt_service import PromptServiceInterface
 from web.dependencies import require_current_user, get_prompt_service
@@ -16,6 +17,13 @@ async def add_prompt(prompt: PromptCreate,
     return service.create_prompt(prompt, user)
 
 
+@router.get("/prompt/{guid}", response_model=Prompt, summary="Retrieve a Private Prompt by GUID")
+def get_prompt(guid: str, service: PromptServiceInterface = Depends(get_prompt_service),
+                        user: User = Depends(require_current_user)):
+    try:
+        return service.get_prompt(guid, user)
+    except RecordNotFoundError:
+        raise HTTPException(status_code=404, detail="Prompt not found")
 @router.delete("/prompt/{guid}", status_code=204, summary="Delete a Private Prompt by GUID")
 async def delete_prompt(guid: str,
                         service: PromptServiceInterface = Depends(get_prompt_service),

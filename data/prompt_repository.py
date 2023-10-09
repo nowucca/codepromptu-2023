@@ -415,7 +415,7 @@ class MySQLPromptRepository(PromptRepositoryInterface):
                 JOIN tags ON prompt_tags.tag_id = tags.id 
                 WHERE tags.tag_name IN ({}) AND prompts.author_id = %s
             """.format(', '.join(['%s'] * len(tags_list)))
-            params = tuple(tags_list + [user.id])
+            params = (tags_list + [user.id])
         else:
             query = """
                 SELECT prompts.guid FROM prompts 
