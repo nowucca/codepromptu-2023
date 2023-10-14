@@ -83,6 +83,7 @@ class PromptService(PromptServiceInterface):
                 db.rollback_transaction()
                 raise known_exc
             except Exception as e:
+                traceback.print_exc()
                 db.rollback_transaction()
                 raise PromptException("An unexpected error occurred while processing your request.") from e
 

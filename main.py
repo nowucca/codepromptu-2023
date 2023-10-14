@@ -1,3 +1,5 @@
+import traceback
+
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
@@ -22,7 +24,8 @@ app.add_middleware(RequestIdMiddleware)
 async def handle_prompt_exception(request, exc: PromptException):
     # Get the status code from our mapping or default to 500 if not found
     status_code = EXCEPTION_STATUS_CODES.get(type(exc), 500)
-    return JSONResponse(status_code=status_code, content={"detail": str(exc)})
+    traceback_string = traceback.format_exc()
+    return JSONResponse(status_code=status_code, content={"detail": str(exc), "traceback": traceback_string})
 
 
 @app.exception_handler(Exception)

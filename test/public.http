@@ -16,15 +16,15 @@ Authorization: Basic {{basic_credential}}
 Content-Type: application/json
 
 {
-  "tags": ["codepromptu", "codepromptu-construction-create-web-layer"],
-  "classification": "Codepromptu/Construction/Prompt",
-  "content": "Lets build the web layer for the following system and service layer.\nLet's use FastAPI to do this.\n\nThe system description is as follows:\n```\n{system-description}\n```\n\nLet's make sure to cover the following use cases for our system:\n```\n{system-usecase-summary}\n```\n\nHere is the prompt service interface to use:\n```\n{service-interface}\n```\n\nHere are the core model objects to use:\n```\n{model-objects}\n```\n\nHere are the core exceptions to use:\n```\n{exceptions}\n```\n\nThe web layer is responsible for validation, central exception handling with a single exception handler, \nand logging of each request (assigning a request id, logging the start and end result of each request per above).\n\nLet's create a FastAPI application with a router for public prompts and a router for private prompts.\nThe public router should support read-only access to prompts before login.\nThe private router should support read-write access to prompts after login.\n\nLet's use HTTP basic authentication for the private router, and implement a service layer repository and database level repository for user validation.\nLet's write a global dependency so all endpoints are logged using the required format.\n\nLet's generatea  file at a time and pause to think upfront about how things will all fit together.\n"
+  "tags": ["codepromptu", "codepromptu-test-construction-iterate-test-cases"],
+  "classification": "Codepromptu/TestConstruction/Prompt",
+  "content": "So let's use that list of test cases, enhanced with edge cases or error scenarios.\nLet's come up with a list of proposed class names, and then for each test class lets write out the full code. Pause\nafter each class and wait for my go-ahead to continue. Be as comprehensive with test case generation as you can. Also,\nremember to use adrianna not alice to create or update prompts.\n"
 }
 
 ###
 
 ### Test List All Public Prompts
-GET {{base_url}}/public/prompt/?skip=0&limit=10
+GET {{base_url}}/public/prompt/?skip=10&limit=100
 ###
 
 ### Test Delete a Public Prompt by GUID
@@ -43,7 +43,7 @@ Content-Type: application/json
 ###
 
 ### Test Retrieve a Public Prompt by GUID
-GET {{base_url}}/public/prompt/ec475a6ee9e2461bb6f4fb1ee402f52e
+GET {{base_url}}/public/prompt/77f49ddee3634b00b780f5fcecc41878
 ###
 
 ### Test Search Public Prompts

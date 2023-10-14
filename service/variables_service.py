@@ -8,7 +8,7 @@ class VariablesService:
     @staticmethod
     def is_valid_mime_type(mime_type: str) -> bool:
         # Use the mimetypes module to validate MIME types
-        return bool(mimetypes.guess_extension(mime_type))
+        return bool(mimetypes.guess_extension(mime_type)) or mime_type.startswith("mime-type")
 
     @staticmethod
     def derive_variables(prompt: PromptCreate) -> None:
